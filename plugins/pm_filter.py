@@ -1658,8 +1658,7 @@ async def combined_filter(client, query):
             search = FRESH.get(key, "")
             total_packs = len(all_files)
 
-            note = f"<b>📌 ᴛᴏᴛᴀʟ ᴄᴏᴍʙɪɴᴇᴅ ᴘᴀᴄᴋs ғᴏᴜɴᴅ - {total_packs}</b>\n\n<b>🔎 ʀᴇsᴜʟᴛs ғᴏʀ :</b> <code>{search}</code>\n\n👋 <b>ʜᴇʏ {query.from_user.mention}\n⚡ ɪ ꜰᴏᴜɴᴅ ꜱᴏᴍᴇ ᴄᴏᴍʙɪɴᴇᴅ / ꜰᴜʟʟ ꜱᴇᴀꜱᴏɴ ᴘᴀᴄᴋs ꜰᴏʀ ʏᴏᴜ.\n\n📂 ᴛʜᴇꜱᴇ ꜰɪʟᴇꜱ ᴍᴀʏ ᴄᴏɴᴛᴀɪɴ:\n• ᴍᴜʟᴛɪᴘʟᴇ ᴇᴘɪꜱᴏᴅᴇꜱ ɪɴ sɪɴɢᴇʟ ғɪʟᴇ\n• ꜰᴜʟʟ ꜱᴇᴀꜱᴏɴ ᴘᴀᴄᴋ\n\n⬇️ ꜱᴇʟᴇᴄᴛ ʏᴏᴜʀ ᴘʀᴇꜰᴇʀʀᴇᴅ ꜰɪʟᴇ ꜰʀᴏᴍ ʙᴇʟᴏᴡ.</b>\n\n━━━━━━━━━━━━━━━━━━━━\n⏳ <i>ᴄʟɪᴄᴋ "ʙᴀᴄᴋ ᴛᴏ ᴍᴀɪɴ ғɪʟᴇ" ʙᴜᴛᴛᴏɴ ᴛᴏ ᴠɪᴇᴡ ᴀʟʟ ʀᴇsᴜʟᴛs</i>"
-
+            note = f"<b>📌 ᴛᴏᴛᴀʟ ᴄᴏᴍʙɪɴᴇᴅ ᴘᴀᴄᴋs ғᴏᴜɴᴅ - {total_packs}</b>\n\n<b>🔎 ʀᴇsᴜʟᴛs ғᴏʀ :</b> <code>{search}</code>\n\n👋 <b>ʜᴇʏ {query.from_user.mention}\n⚡ ɪ ꜰᴏᴜɴᴅ ꜱᴏᴍᴇ ᴄᴏᴍʙɪɴᴇᴅ / ꜰᴜʟʟ ꜱᴇᴀꜱᴏɴ ᴘᴀᴄᴋs ꜰᴏʀ ʏᴏᴜ.\n\n📂 ᴛʜᴇꜱᴇ ꜰɪʟᴇꜱ ᴍᴀʏ ᴄᴏɴᴛᴀɪɴ:\n• ᴍᴜʟᴛɪᴘʟᴇ ᴇᴘɪꜱᴏᴅᴇꜱ ɪɴ sɪɴɢᴇʟ ғɪʟᴇ\n• ꜰᴜʟʟ ꜱᴇᴀꜱᴏɴ ᴘᴀᴄᴋ\n\n⬇️ ꜱᴇʟᴇᴄᴛ ʏᴏᴜʀ ᴘʀᴇꜰᴇʀʀᴇᴅ ꜰɪʟᴇ ꜰʀᴏᴍ ʙᴇʟᴏᴡ.</b>\n\n━━━━━━━━━━━━━━━━━━━━\n⏳ <i>ᴄʟɪᴄᴋ ᴏɴ - ʙᴀᴄᴋ ᴛᴏ ᴍᴀɪɴ ᴘᴀɢᴇ ʙᴜᴛᴛᴏɴ ᴛᴏ ᴠɪᴇᴡ ᴀʟʟ ʀᴇsᴜʟᴛs</i>"
             await query.message.edit_text(
                 text=note,
                 reply_markup=InlineKeyboardMarkup(btn),
@@ -2895,7 +2894,10 @@ async def auto_filter(client, msg, spoll=False):
                 # 🔹 analyze ALL files (not only 1st page)
                 for file in all_files:
                     name = (file.file_name or "").lower()
-                    if any(x in name for x in ["complete", "combined", "season pack", "complete series", "COMBINED", "COMBINED", "full series"]):
+                    # season detect
+                    has_season = any(re.search(pattern, name) for pattern in SMART_SEASON_REGEX)
+                    # combined detect ONLY if season present
+                    if has_season and any(x in name for x in ["complete", "combined", "season pack", "COMBINED", "COMBiNED", "complete series", "full series"]):
                         smart_combined.append(file)
 
                     # 🔤 Language detection
@@ -2986,7 +2988,10 @@ async def auto_filter(client, msg, spoll=False):
 
                             for file in all_files:
                                 name = (file.file_name or "").lower()
-                                if any(x in name for x in ["complete", "combined", "season pack", "COMBINED", "COMBiNED", "full series"]):
+                                # season detect
+                                has_season = any(re.search(pattern, name) for pattern in SMART_SEASON_REGEX)
+                                # combined detect ONLY if season present
+                                if has_season and any(x in name for x in ["complete", "combined", "season pack", "COMBINED", "COMBiNED", "complete series", "full series"]):
                                     smart_combined.append(file)
 
                                 for lang_key, data in SMART_LANG_MAP.items():
@@ -3056,11 +3061,7 @@ async def auto_filter(client, msg, spoll=False):
             for file in files
         ]
         combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
-        if not combined_files:
-            combined_files = [
-                f for f in files
-                if any(x in (f.file_name or "").lower() for x in ["complete", "combined", "season pack", "full series"])
-	        ]
+        
         top_row = [
             InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
             InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
@@ -3080,11 +3081,7 @@ async def auto_filter(client, msg, spoll=False):
     else:
         btn = []
         combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
-        if not combined_files:
-            combined_files = [
-                f for f in files
-                if any(x in (f.file_name or "").lower() for x in ["complete", "combined", "season pack", "full series"])
-			]
+    
         top_row = [
             InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
             InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
