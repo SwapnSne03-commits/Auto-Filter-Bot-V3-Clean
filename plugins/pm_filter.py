@@ -2709,6 +2709,7 @@ async def auto_filter(client, msg, spoll=False):
                 smart_languages = set()
                 smart_seasons = set()
                 smart_qualities = set()
+                smart_combined = []
 
                 # 🔹 start with first page files
                 files = files or []
@@ -2734,6 +2735,8 @@ async def auto_filter(client, msg, spoll=False):
                 # 🔹 analyze ALL files (not only 1st page)
                 for file in all_files:
                     name = (file.file_name or "").lower()
+                    if any(x in name for x in ["complete", "combined", "season pack", "full series"]):
+                        smart_combined.append(file)
 
                     # 🔤 Language detection
                     for lang_key, data in SMART_LANG_MAP.items():
@@ -2762,7 +2765,8 @@ async def auto_filter(client, msg, spoll=False):
                 temp.SMART_FILTERS[key] = {
                     "languages": sorted(smart_languages),
                     "seasons": sorted(smart_seasons),
-                    "qualities": sorted(smart_qualities)
+                    "qualities": sorted(smart_qualities),
+                    "combined": smart_combined
 				    }
             # ========================================================
             if not files:
@@ -2801,6 +2805,7 @@ async def auto_filter(client, msg, spoll=False):
                             smart_languages = set()
                             smart_seasons = set()
                             smart_qualities = set()
+                            smart_combined = []
 
                             all_files = list(files)
 
@@ -2821,6 +2826,8 @@ async def auto_filter(client, msg, spoll=False):
 
                             for file in all_files:
                                 name = (file.file_name or "").lower()
+                                if any(x in name for x in ["complete", "combined", "season pack", "full series"]):
+                                    smart_combined.append(file)
 
                                 for lang_key, data in SMART_LANG_MAP.items():
                                     for alias in data["aliases"]:
@@ -2844,7 +2851,8 @@ async def auto_filter(client, msg, spoll=False):
                             temp.SMART_FILTERS[key] = {
                                 "languages": sorted(smart_languages),
                                 "seasons": sorted(smart_seasons),
-                                "qualities": sorted(smart_qualities)
+                                "qualities": sorted(smart_qualities),
+                                "combined": smart_combined
 	                        }
                         if files:
                             search = is_misspelled
