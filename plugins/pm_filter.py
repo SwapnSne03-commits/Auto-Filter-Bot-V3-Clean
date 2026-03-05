@@ -335,7 +335,8 @@ async def next_page(bot, query):
                 ]
                 for file in files
             ]
-            combined_files = temp.SMART_FILTERS.get(key, {}).get("combined", [])
+            combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
+            has_seasons = temp.SMART_FILTERS.get(key, {}).get("seasons")
 
             top_row = [
                 InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
@@ -347,11 +348,12 @@ async def next_page(bot, query):
 
             if combined_files:
                 btn.insert(1, [
-                    InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"combined#{key}#0")
+                    InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"fc#{key}#0"")
                 ])
             
         else:
-            combined_files = temp.SMART_FILTERS.get(key, {}).get("combined", [])
+            combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
+            has_seasons = temp.SMART_FILTERS.get(key, {}).get("seasons")
 
             btn = []
 
@@ -365,7 +367,7 @@ async def next_page(bot, query):
 
             if combined_files:
                 btn.insert(1, [
-                    InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"combined#{key}#0")
+                    InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"fc#{key}#0")
                 ])
             
         try:
@@ -1534,6 +1536,117 @@ async def filter_season_cb_handler(client: Client, query: CallbackQuery):
 
     except Exception as e:
         LOGGER.error(f"Error In Season Filter - {e}")
+
+@Client.on_callback_query(filters.regex(r"^fc#"))
+async def combined_filter(client, query):
+    try:
+        _, key, offset = query.data.split("#")
+
+        try:
+            offset = int(offset)
+        except:
+            offset = 0
+
+        # 🔐 OWNER CHECK
+        owner_id = temp.OWNER.get(key)
+        if owner_id and query.from_user.id != owner_id:
+            return await query.answer(
+                "🚫 ɴᴏᴛ ʏᴏᴜʀ ʀᴇǫᴜᴇsᴛ",
+                show_alert=True
+            )
+
+        # 🔹 Activate combined filter state
+        if not hasattr(temp, "ACTIVE_FILTER"):
+            temp.ACTIVE_FILTER = {}
+
+        temp.ACTIVE_FILTER[key] = {
+            "type": "combined",
+            "value": "combined"
+        }
+
+        # 🔹 Get combined files
+        all_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
+
+        if not all_files:
+            return await query.answer(
+                "🚫 ɴᴏ ᴄᴏᴍʙɪɴᴇᴅ ꜰɪʟᴇꜱ ꜰᴏᴜɴᴅ",
+                show_alert=True
+            )
+
+        chat_id = query.message.chat.id
+        settings = await get_settings(chat_id)
+
+        per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
+
+        files = all_files[offset: offset + per_page]
+
+        total_results = len(all_files)
+
+        if total_results > offset + per_page:
+            n_offset = offset + per_page
+        else:
+            n_offset = ""
+
+        # ================= FILE BUTTONS =================
+        btn = [
+            [
+                InlineKeyboardButton(
+                    text=f"{silent_size(f.file_size)} ✦ {extract_tag(f.file_name)} {clean_filename(f.file_name)}",
+                    callback_data=f"file#{f.file_id}"
+                )
+            ]
+            for f in files
+        ]
+
+        # ================= PAGINATION =================
+        current_page = (offset // per_page) + 1
+        total_pages = math.ceil(total_results / per_page)
+
+        prev_offset = offset - per_page if offset > 0 else None
+
+        row = []
+
+        if prev_offset is not None:
+            row.append(
+                InlineKeyboardButton(
+                    "⋞ ʙᴀᴄᴋ",
+                    callback_data=f"fc#{key}#{prev_offset}"
+                )
+            )
+
+        row.append(
+            InlineKeyboardButton(
+                text=f"{current_page}/{total_pages}",
+                callback_data="pages"
+            )
+        )
+
+        if n_offset != "":
+            row.append(
+                InlineKeyboardButton(
+                    "ɴᴇxᴛ ⋟",
+                    callback_data=f"fc#{key}#{n_offset}"
+                )
+            )
+
+        btn.append(row)
+
+        # 🔙 Back to main search result
+        btn.append([
+            InlineKeyboardButton(
+                text="⋞ ʙᴀᴄᴋ ᴛᴏ ᴍᴀɪɴ ᴘᴀɢᴇ",
+                callback_data=f"fl#homepage#{key}#0"
+            )
+        ])
+
+        await query.edit_message_reply_markup(
+            reply_markup=InlineKeyboardMarkup(btn)
+        )
+
+        await query.answer()
+
+    except Exception as e:
+        LOGGER.error(f"Error In Combined Filter - {e}")
 
 @Client.on_callback_query(filters.regex(r"^spol"))
 async def advantage_spoll_choker(bot, query):
