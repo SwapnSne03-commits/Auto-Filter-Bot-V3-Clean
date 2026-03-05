@@ -348,7 +348,7 @@ async def next_page(bot, query):
 
             if combined_files:
                 btn.insert(1, [
-                    InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"fc#{key}#0"")
+                    InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"fc#{key}#0")
                 ])
             
         else:
