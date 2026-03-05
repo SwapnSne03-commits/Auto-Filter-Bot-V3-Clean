@@ -299,7 +299,7 @@ async def next_page(bot, query):
                     if any(a in (f.file_name or "").lower() for a in aliases)
                 ]
             elif active["type"] == "combined":
-                data = temp.SMART_FILTERS.get(key, {}).get("combined", [])
+                data = temp.SMART_FILTERS.get(key, {}).get("combined") or []
 	
             total = len(data)
             files = data[offset: offset + per_page]
@@ -1577,6 +1577,8 @@ async def combined_filter(client, query):
         # 🔹 GET COMBINED FILES
         all_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
 
+        total_packs = len(all_files)
+
         if not all_files:
             return await query.answer(
                 "🚫 ɴᴏ ᴄᴏᴍʙɪɴᴇᴅ ꜰɪʟᴇꜱ ꜰᴏᴜɴᴅ",
@@ -1650,10 +1652,21 @@ async def combined_filter(client, query):
         ])
 
         # ================= UPDATE MESSAGE =================
+        # ================= UPDATE MESSAGE =================
         try:
-            await query.edit_message_reply_markup(
-                reply_markup=InlineKeyboardMarkup(btn)
+
+            search = FRESH.get(key, "")
+            total_packs = len(all_files)
+
+            note = f"<b>📌 ᴛᴏᴛᴀʟ ᴄᴏᴍʙɪɴᴇᴅ ᴘᴀᴄᴋs ғᴏᴜɴᴅ - {total_packs}</b>\n\n<b>🔎 ʀᴇsᴜʟᴛs ғᴏʀ :</b> <code>{search}</code>\n\n👋 <b>ʜᴇʏ {query.from_user.mention}\n⚡ ɪ ꜰᴏᴜɴᴅ ꜱᴏᴍᴇ ᴄᴏᴍʙɪɴᴇᴅ / ꜰᴜʟʟ ꜱᴇᴀꜱᴏɴ ᴘᴀᴄᴋs ꜰᴏʀ ʏᴏᴜ.\n\n📂 ᴛʜᴇꜱᴇ ꜰɪʟᴇꜱ ᴍᴀʏ ᴄᴏɴᴛᴀɪɴ:\n• ᴍᴜʟᴛɪᴘʟᴇ ᴇᴘɪꜱᴏᴅᴇꜱ ɪɴ sɪɴɢᴇʟ ғɪʟᴇ\n• ꜰᴜʟʟ ꜱᴇᴀꜱᴏɴ ᴘᴀᴄᴋ\n\n⬇️ ꜱᴇʟᴇᴄᴛ ʏᴏᴜʀ ᴘʀᴇꜰᴇʀʀᴇᴅ ꜰɪʟᴇ ꜰʀᴏᴍ ʙᴇʟᴏᴡ.</b>\n\n━━━━━━━━━━━━━━━━━━━━\n⏳ <i>ᴄʟɪᴄᴋ "ʙᴀᴄᴋ ᴛᴏ ᴍᴀɪɴ ғɪʟᴇ" ʙᴜᴛᴛᴏɴ ᴛᴏ ᴠɪᴇᴡ ᴀʟʟ ʀᴇsᴜʟᴛs</i>"
+
+            await query.message.edit_text(
+                text=note,
+                reply_markup=InlineKeyboardMarkup(btn),
+                disable_web_page_preview=True,
+                parse_mode=enums.ParseMode.HTML
             )
+
         except MessageNotModified:
             pass
 
@@ -3042,7 +3055,12 @@ async def auto_filter(client, msg, spoll=False):
             ]
             for file in files
         ]
-        combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or [] 
+        combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
+        if not combined_files:
+            combined_files = [
+                f for f in files
+                if any(x in (f.file_name or "").lower() for x in ["complete", "combined", "season pack", "full series"])
+	        ]
         top_row = [
             InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
             InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
@@ -3055,13 +3073,18 @@ async def auto_filter(client, msg, spoll=False):
             btn.insert(1, [
                 InlineKeyboardButton(
                     "ᴄᴏᴍʙɪɴᴇᴅ",
-                    callback_data=f"combined#{key}#0"
+                    callback_data=f"fc#{key}#0"
                 )
             ])
         
     else:
         btn = []
-        combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or [] 
+        combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
+        if not combined_files:
+            combined_files = [
+                f for f in files
+                if any(x in (f.file_name or "").lower() for x in ["complete", "combined", "season pack", "full series"])
+			]
         top_row = [
             InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
             InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
@@ -3074,7 +3097,7 @@ async def auto_filter(client, msg, spoll=False):
             btn.insert(1, [
                 InlineKeyboardButton(
                     "ᴄᴏᴍʙɪɴᴇᴅ",
-                    callback_data=f"combined#{key}#0"
+                    callback_data=f"fc#{key}#0"
                 )
             ])
         
