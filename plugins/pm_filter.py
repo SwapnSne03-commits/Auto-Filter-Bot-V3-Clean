@@ -298,7 +298,9 @@ async def next_page(bot, query):
                     f for f in all_files
                     if any(a in (f.file_name or "").lower() for a in aliases)
                 ]
-
+            elif active["type"] == "combined":
+                data = temp.SMART_FILTERS.get(key, {}).get("combined", [])
+	
             total = len(data)
             files = data[offset: offset + per_page]
 
@@ -333,23 +335,38 @@ async def next_page(bot, query):
                 ]
                 for file in files
             ]
-            btn.insert(0, 
-                [ 
-                    InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
-                    InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
-                    InlineKeyboardButton("ꜱᴇᴀꜱᴏɴ",  callback_data=f"seasons#{key}#0")
-                ]
-            )
+            combined_files = temp.SMART_FILTERS.get(key, {}).get("combined", [])
+
+            top_row = [
+                InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
+                InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
+                InlineKeyboardButton("ꜱᴇᴀꜱᴏɴ", callback_data=f"seasons#{key}#0")
+            ]
+
+            btn.insert(0, top_row)
+
+            if combined_files:
+                btn.insert(1, [
+                    InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"combined#{key}#0")
+                ])
             
         else:
+            combined_files = temp.SMART_FILTERS.get(key, {}).get("combined", [])
+
             btn = []
-            btn.insert(0, 
-                [
-                    InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
-                    InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
-                    InlineKeyboardButton("ꜱᴇᴀꜱᴏɴ",  callback_data=f"seasons#{key}#0")
-                ]
-            )
+
+            top_row = [
+                InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
+                InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
+                InlineKeyboardButton("ꜱᴇᴀꜱᴏɴ", callback_data=f"seasons#{key}#0")
+            ]
+
+            btn.insert(0, top_row)
+
+            if combined_files:
+                btn.insert(1, [
+                    InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"combined#{key}#0")
+                ])
             
         try:
             if settings['max_btn']:
@@ -430,6 +447,10 @@ async def next_page(bot, query):
             elif active["type"] == "quality":
                 btn.append([
                     InlineKeyboardButton("⋞ ʙᴀᴄᴋ ᴛᴏ ᴍᴀɪɴ ᴘᴀɢᴇ", callback_data=f"fq#homepage#{key}#0")
+                ])
+            elif active["type"] == "combined":
+                btn.append([
+                    InlineKeyboardButton("⋞ ʙᴀᴄᴋ ᴛᴏ ᴍᴀɪɴ ᴘᴀɢᴇ", callback_data=f"fl#homepage#{key}#0")
                 ])
         if not settings.get('button'):
             cur_time = datetime.now(pytz.timezone('Asia/Kolkata')).time()
@@ -2735,7 +2756,7 @@ async def auto_filter(client, msg, spoll=False):
                 # 🔹 analyze ALL files (not only 1st page)
                 for file in all_files:
                     name = (file.file_name or "").lower()
-                    if any(x in name for x in ["complete", "combined", "season pack", "full series"]):
+                    if any(x in name for x in ["complete", "combined", "season pack", "complete series", "COMBINED", "COMBINED", "full series"]):
                         smart_combined.append(file)
 
                     # 🔤 Language detection
@@ -2826,7 +2847,7 @@ async def auto_filter(client, msg, spoll=False):
 
                             for file in all_files:
                                 name = (file.file_name or "").lower()
-                                if any(x in name for x in ["complete", "combined", "season pack", "full series"]):
+                                if any(x in name for x in ["complete", "combined", "season pack", "COMBINED", "COMBiNED", "full series"]):
                                     smart_combined.append(file)
 
                                 for lang_key, data in SMART_LANG_MAP.items():
@@ -2895,23 +2916,41 @@ async def auto_filter(client, msg, spoll=False):
             ]
             for file in files
         ]
-        btn.insert(0, 
-            [
-                InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
-                InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
-                InlineKeyboardButton("ꜱᴇᴀꜱᴏɴ",  callback_data=f"seasons#{key}#0")
-            ]
-        )
+        combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or [] 
+        top_row = [
+            InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
+            InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
+            InlineKeyboardButton("ꜱᴇᴀꜱᴏɴ", callback_data=f"seasons#{key}#0")
+        ]
+
+        btn.insert(0, top_row)
+
+        if combined_files:
+            btn.insert(1, [
+                InlineKeyboardButton(
+                    "ᴄᴏᴍʙɪɴᴇᴅ",
+                    callback_data=f"combined#{key}#0"
+                )
+            ])
         
     else:
         btn = []
-        btn.insert(0, 
-            [
-                InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
-                InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
-                InlineKeyboardButton("ꜱᴇᴀꜱᴏɴ",  callback_data=f"seasons#{key}#0")
-            ]
-        )
+        combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or [] 
+        top_row = [
+            InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
+            InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
+            InlineKeyboardButton("ꜱᴇᴀꜱᴏɴ", callback_data=f"seasons#{key}#0")
+        ]
+
+        btn.insert(0, top_row)
+
+        if combined_files:
+            btn.insert(1, [
+                InlineKeyboardButton(
+                    "ᴄᴏᴍʙɪɴᴇᴅ",
+                    callback_data=f"combined#{key}#0"
+                )
+            ])
         
     if offset != "":
         req = message.from_user.id if message.from_user else 0
