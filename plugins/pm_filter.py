@@ -1539,6 +1539,7 @@ async def filter_season_cb_handler(client: Client, query: CallbackQuery):
 
 @Client.on_callback_query(filters.regex(r"^fc#"))
 async def combined_filter(client, query):
+
     try:
         _, key, offset = query.data.split("#")
 
@@ -1549,13 +1550,22 @@ async def combined_filter(client, query):
 
         # 🔐 OWNER CHECK
         owner_id = temp.OWNER.get(key)
-        if owner_id and query.from_user.id != owner_id:
+
+        if owner_id is None:
             return await query.answer(
-                "🚫 ɴᴏᴛ ʏᴏᴜʀ ʀᴇǫᴜᴇsᴛ",
+                "❌ sᴇssɪᴏɴ ᴇxᴘɪʀᴇᴅ, ᴘʟᴇᴀsᴇ sᴇᴀʀᴄʜ ᴀɢᴀɪɴ",
                 show_alert=True
             )
 
-        # 🔹 Activate combined filter state
+        if query.from_user.id != owner_id:
+            return await query.answer(
+                "🚫 ɴᴏᴛ ʏᴏᴜʀ ʀᴇǫᴜᴇsᴛ ʙᴜᴅᴅʏ !!",
+                show_alert=True
+            )
+
+        await query.answer()
+
+        # 🔹 ACTIVE FILTER STATE
         if not hasattr(temp, "ACTIVE_FILTER"):
             temp.ACTIVE_FILTER = {}
 
@@ -1564,7 +1574,7 @@ async def combined_filter(client, query):
             "value": "combined"
         }
 
-        # 🔹 Get combined files
+        # 🔹 GET COMBINED FILES
         all_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
 
         if not all_files:
@@ -1631,7 +1641,7 @@ async def combined_filter(client, query):
 
         btn.append(row)
 
-        # 🔙 Back to main search result
+        # 🔙 BACK TO MAIN PAGE
         btn.append([
             InlineKeyboardButton(
                 text="⋞ ʙᴀᴄᴋ ᴛᴏ ᴍᴀɪɴ ᴘᴀɢᴇ",
@@ -1639,15 +1649,18 @@ async def combined_filter(client, query):
             )
         ])
 
-        await query.edit_message_reply_markup(
-            reply_markup=InlineKeyboardMarkup(btn)
-        )
-
-        await query.answer()
+        # ================= UPDATE MESSAGE =================
+        try:
+            await query.edit_message_reply_markup(
+                reply_markup=InlineKeyboardMarkup(btn)
+            )
+        except MessageNotModified:
+            pass
 
     except Exception as e:
         LOGGER.error(f"Error In Combined Filter - {e}")
 
+    
 @Client.on_callback_query(filters.regex(r"^spol"))
 async def advantage_spoll_choker(bot, query):
 
