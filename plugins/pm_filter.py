@@ -755,7 +755,15 @@ async def filter_qualities_cb_handler(client: Client, query: CallbackQuery):
             InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
             InlineKeyboardButton("ꜱᴇᴀꜱᴏɴ", callback_data=f"seasons#{key}#0"),
         ])
+        combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
 
+        if combined_files:
+            btn.insert(1, [
+                InlineKeyboardButton(
+                    "ᴄᴏᴍʙɪɴᴇᴅ",
+                    callback_data=f"fc#{key}#0"
+                )
+            ])
         # 🔽 Pagination (old mode OR restored homepage)
         if n_offset != "":
             try:
@@ -1478,7 +1486,15 @@ async def filter_season_cb_handler(client: Client, query: CallbackQuery):
             InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
             InlineKeyboardButton("ꜱᴇᴀꜱᴏɴ", callback_data=f"seasons#{key}#0"),
         ])
+        combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
 
+        if combined_files:
+            btn.insert(1, [
+                InlineKeyboardButton(
+                    "ᴄᴏᴍʙɪɴᴇᴅ",
+                    callback_data=f"fc#{key}#0"
+                )
+            ])
         # 🔽 Pagination handling (ONLY old mode)
         # 🔽 Pagination
         if n_offset != "":
@@ -2962,10 +2978,13 @@ async def auto_filter(client, msg, spoll=False):
                 # 🔹 analyze ALL files (not only 1st page)
                 for file in all_files:
                     name = (file.file_name or "").lower()
+                    caption = (file.caption or "").lower()
+
+                    text = f"{name} {caption}"
                     # season detect
-                    has_season = any(re.search(pattern, name) for pattern in SMART_SEASON_REGEX)
+                    has_season = any(re.search(pattern, text) for pattern in SMART_SEASON_REGEX)
                     # combined detect ONLY if season present
-                    if has_season and any(x in name for x in ["complete", "combined", "season pack", "COMBINED", "COMBiNED", "complete series", "full series"]):
+                    if has_season and any(x in text for x in ["complete", "season complete", "complete season", "all episodes", "batch", "combined", "season pack", "COMBINED", "COMBiNED", "complete series", "full series"]):
                         smart_combined.append(file)
 
                     # 🔤 Language detection
@@ -3056,10 +3075,13 @@ async def auto_filter(client, msg, spoll=False):
 
                             for file in all_files:
                                 name = (file.file_name or "").lower()
+                                caption = (file.caption or "").lower()
+
+                                text = f"{name} {caption}"
                                 # season detect
-                                has_season = any(re.search(pattern, name) for pattern in SMART_SEASON_REGEX)
+                                has_season = any(re.search(pattern, text) for pattern in SMART_SEASON_REGEX)
                                 # combined detect ONLY if season present
-                                if has_season and any(x in name for x in ["complete", "combined", "season pack", "COMBINED", "COMBiNED", "complete series", "full series"]):
+                                if has_season and any(x in text for x in ["complete", "combined", "complete season", "season complete", "all episodes", "season pack", "COMBINED", "COMBiNED", "complete series", "full series"]):
                                     smart_combined.append(file)
 
                                 for lang_key, data in SMART_LANG_MAP.items():
