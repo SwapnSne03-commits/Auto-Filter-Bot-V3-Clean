@@ -1808,7 +1808,7 @@ async def advantage_spoll_choker(bot, query):
 
             # language detect
             for lang_key, data in SMART_LANG_MAP.items():
-                if any(re.search(rf"(^|[\s._-]){alias}($|[\s._-])", text) for alias in data["aliases"]):
+                if any(alias in text for alias in data["aliases"]):
                     smart_languages.add(lang_key)
 
             # season detect
