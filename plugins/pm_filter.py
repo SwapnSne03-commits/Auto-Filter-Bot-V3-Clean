@@ -1662,22 +1662,9 @@ async def combined_filter(client, query):
         # ================= UPDATE MESSAGE =================
         # ================= UPDATE MESSAGE =================
         try:
-
-            search = FRESH.get(key, "")
-            all_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
-            total_packs = len(all_files)
-
-            if all_files:
-
-                note = f"<b>📌 ᴛᴏᴛᴀʟ ᴄᴏᴍʙɪɴᴇᴅ ᴘᴀᴄᴋs ғᴏᴜɴᴅ - {total_packs}</b>\n\n<b>🔎 ʀᴇsᴜʟᴛs ғᴏʀ :</b> <code>{search}</code>\n\n👋 <b>ʜᴇʏ {query.from_user.mention}</b>\n⚡ ɪ ꜰᴏᴜɴᴅ ꜱᴏᴍᴇ ᴄᴏᴍʙɪɴᴇᴅ / ꜰᴜʟʟ ꜱᴇᴀꜱᴏɴ ᴘᴀᴄᴋs ꜰᴏʀ ʏᴏᴜ.\n\n📂 ᴛʜᴇꜱᴇ ꜰɪʟᴇꜱ ᴍᴀʏ ᴄᴏɴᴛᴀɪɴ:\n• ᴍᴜʟᴛɪᴘʟᴇ ᴇᴘɪꜱᴏᴅᴇꜱ ɪɴ sɪɴɢᴇʟ ғɪʟᴇ\n• ꜰᴜʟʟ ꜱᴇᴀꜱᴏɴ ᴘᴀᴄᴋ\n\n⬇️ ꜱᴇʟᴇᴄᴛ ʏᴏᴜʀ ᴘʀᴇꜰᴇʀʀᴇᴅ ꜰɪʟᴇ ꜰʀᴏᴍ ʙᴇʟᴏᴡ.</b>\n\n━━━━━━━━━━━━━━━━━━━━\n⏳ <i>ᴄʟɪᴄᴋ ᴏɴ - ʙᴀᴄᴋ ᴛᴏ ᴍᴀɪɴ ᴘᴀɢᴇ ʙᴜᴛᴛᴏɴ ᴛᴏ ᴠɪᴇᴡ ᴀʟʟ ʀᴇsᴜʟᴛs</i>"
-
-                await query.message.edit_text(
-                    text=note,
-                    reply_markup=InlineKeyboardMarkup(btn),
-                    disable_web_page_preview=True,
-                    parse_mode=enums.ParseMode.HTML
-                )
-
+            await query.message.edit_reply_markup(
+                reply_markup=InlineKeyboardMarkup(btn)
+            )
         except MessageNotModified:
             pass
 
@@ -1728,6 +1715,74 @@ async def advantage_spoll_choker(bot, query):
         offset=0,
         filter=True
     )
+
+    # 🔥 SMART FILTER REBUILD (Suggestion Click Case)
+    if SMART_SELECTION_MODE:
+
+        smart_languages = set()
+        smart_seasons = set()
+        smart_qualities = set()
+        smart_combined = []
+
+        files = files or []
+        all_files = list(files)
+        if not files:
+            return
+
+        next_offset = offset
+
+        while next_offset:
+            more_files, next_offset, _ = await get_search_results(
+                chat_id,
+                movie,
+                offset=next_offset,
+                filter=True
+            )
+
+            if not more_files:
+                break
+
+            all_files.extend(more_files)
+
+        for file in all_files:
+            name = (file.file_name or "").lower()
+
+            # language detect
+            for lang_key, data in SMART_LANG_MAP.items():
+                for alias in data["aliases"]:
+                    if re.search(rf"(^|[.\s_-]){alias}([.\s_-]|$)", name):
+                        smart_languages.add(lang_key)
+                        break
+
+            # season detect
+            for pattern in SMART_SEASON_REGEX:
+                match = re.search(pattern, name)
+                if match:
+                    num = re.search(r"\d{1,2}", match.group())
+                    if num:
+                        smart_seasons.add(f"S{int(num.group()):02d}")
+                    break
+
+            # quality detect
+            q = re.search(SMART_QUALITY_REGEX, name)
+            if q:
+                smart_qualities.add(q.group())
+
+            # 🔥 combined detect
+            has_season = any(re.search(pattern, name) for pattern in SMART_SEASON_REGEX)
+
+            if has_season and any(x in name for x in ["complete", "combined", "season pack", "full series"]):
+                smart_combined.append(file)
+	
+        key = f"{chat_id}-{user_msg.id}"
+
+        temp.GETALL[key] = all_files
+        temp.SMART_FILTERS[key] = {
+            "languages": sorted(smart_languages),
+            "seasons": sorted(smart_seasons),
+            "qualities": sorted(smart_qualities),
+            "combined": smart_combined
+	    }
 
     if files:
         if not user_msg:
