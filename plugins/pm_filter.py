@@ -1624,7 +1624,20 @@ async def combined_filter(client, query):
             n_offset = ""
 
         # ================= FILE BUTTONS =================
-        btn = [
+        # ================= FILE BUTTONS =================
+
+        btn = []
+
+        # 🔹 Combined Info Button (Top UI)
+        btn.append([
+            InlineKeyboardButton(
+                f"⇊ ᴄᴏᴍʙɪɴᴇᴅ ꜰɪʟᴇꜱ • {len(all_files)} ᴘᴀᴄᴋꜱ ⇊",
+                callback_data="combined_info"
+            )
+        ])
+
+        # 🔹 Combined Files List
+        btn += [
             [
                 InlineKeyboardButton(
                     text=f"{silent_size(f.file_size)} ✦ {extract_tag(f.file_name)} {clean_filename(f.file_name)}",
@@ -1688,7 +1701,41 @@ async def combined_filter(client, query):
     except Exception as e:
         LOGGER.error(f"Error In Combined Filter - {e}")
 
-    
+@Client.on_callback_query(filters.regex("^combined_info$"))
+async def combined_info_popup(client, query):
+
+    user = query.from_user
+    chat_id = query.message.chat.id
+
+    # 🔹 Detect current search session
+    key = None
+    try:
+        msg_id = query.message.reply_to_message.id
+        key = f"{chat_id}-{msg_id}"
+    except:
+        pass
+
+    packs = 0
+    if key:
+        packs = len(temp.SMART_FILTERS.get(key, {}).get("combined", []))
+
+    text = (
+        f"👋 ʜᴇʏ {user.first_name}\n\n"
+        f"📦 ᴄᴏᴍʙɪɴᴇᴅ ᴘᴀᴄᴋꜱ ɪɴꜰᴏ\n"
+        f"━━━━━━━━━━━━━━━━━━\n\n"
+        f"📊 ᴛᴏᴛᴀʟ ᴘᴀᴄᴋꜱ : {packs}\n\n"
+        f"⚡ ᴛʜɪꜱ ꜱᴇᴄᴛɪᴏɴ ʟɪꜱᴛꜱ\n"
+        f"ᴄᴏᴍʙɪɴᴇᴅ ᴇᴘɪꜱᴏᴅᴇ ᴘᴀᴄᴋꜱ.\n\n"
+        f"📂 ᴛʜᴇꜱᴇ ꜰɪʟᴇꜱ ᴍᴀʏ ɪɴᴄʟᴜᴅᴇ\n"
+        f"• ᴍᴜʟᴛɪᴘʟᴇ ᴇᴘɪꜱᴏᴅᴇꜱ\n"
+        f"• ᴄᴏᴍᴘʟᴇᴛᴇ ꜱᴇᴀꜱᴏɴ ᴘᴀᴄᴋ\n"
+        f"• ꜰᴜʟʟ ꜱᴇʀɪᴇꜱ ᴘᴀᴄᴋ\n\n"
+        f"⬇️ ꜱᴇʟᴇᴄᴛ ᴀɴʏ ᴘᴀᴄᴋ\n"
+        f"ꜰʀᴏᴍ ᴛʜᴇ ʟɪꜱᴛ ʙᴇʟᴏᴡ."
+    )
+
+    await query.answer(text, show_alert=True)
+
 @Client.on_callback_query(filters.regex(r"^spol"))
 async def advantage_spoll_choker(bot, query):
 
