@@ -1116,7 +1116,15 @@ async def filter_language_cb_handler(client: Client, query: CallbackQuery):
             InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
             InlineKeyboardButton("ꜱᴇᴀꜱᴏɴ", callback_data=f"seasons#{key}#0"),
         ])
+        combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
 
+        if combined_files:
+            btn.insert(1, [
+                InlineKeyboardButton(
+                    "ᴄᴏᴍʙɪɴᴇᴅ",
+                    callback_data=f"fc#{key}#0"
+                )
+            ])
         # 🔽 Pagination (ONLY old mode OR restored homepage)
         # 🔽 Pagination
         if n_offset != "":
@@ -1656,19 +1664,24 @@ async def combined_filter(client, query):
         try:
 
             search = FRESH.get(key, "")
+            all_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
             total_packs = len(all_files)
 
-            note = f"<b>📌 ᴛᴏᴛᴀʟ ᴄᴏᴍʙɪɴᴇᴅ ᴘᴀᴄᴋs ғᴏᴜɴᴅ - {total_packs}</b>\n\n<b>🔎 ʀᴇsᴜʟᴛs ғᴏʀ :</b> <code>{search}</code>\n\n👋 <b>ʜᴇʏ {query.from_user.mention}\n⚡ ɪ ꜰᴏᴜɴᴅ ꜱᴏᴍᴇ ᴄᴏᴍʙɪɴᴇᴅ / ꜰᴜʟʟ ꜱᴇᴀꜱᴏɴ ᴘᴀᴄᴋs ꜰᴏʀ ʏᴏᴜ.\n\n📂 ᴛʜᴇꜱᴇ ꜰɪʟᴇꜱ ᴍᴀʏ ᴄᴏɴᴛᴀɪɴ:\n• ᴍᴜʟᴛɪᴘʟᴇ ᴇᴘɪꜱᴏᴅᴇꜱ ɪɴ sɪɴɢᴇʟ ғɪʟᴇ\n• ꜰᴜʟʟ ꜱᴇᴀꜱᴏɴ ᴘᴀᴄᴋ\n\n⬇️ ꜱᴇʟᴇᴄᴛ ʏᴏᴜʀ ᴘʀᴇꜰᴇʀʀᴇᴅ ꜰɪʟᴇ ꜰʀᴏᴍ ʙᴇʟᴏᴡ.</b>\n\n━━━━━━━━━━━━━━━━━━━━\n⏳ <i>ᴄʟɪᴄᴋ ᴏɴ - ʙᴀᴄᴋ ᴛᴏ ᴍᴀɪɴ ᴘᴀɢᴇ ʙᴜᴛᴛᴏɴ ᴛᴏ ᴠɪᴇᴡ ᴀʟʟ ʀᴇsᴜʟᴛs</i>"
-            await query.message.edit_text(
-                text=note,
-                reply_markup=InlineKeyboardMarkup(btn),
-                disable_web_page_preview=True,
-                parse_mode=enums.ParseMode.HTML
-            )
+            if all_files:
+
+                note = f"<b>📌 ᴛᴏᴛᴀʟ ᴄᴏᴍʙɪɴᴇᴅ ᴘᴀᴄᴋs ғᴏᴜɴᴅ - {total_packs}</b>\n\n<b>🔎 ʀᴇsᴜʟᴛs ғᴏʀ :</b> <code>{search}</code>\n\n👋 <b>ʜᴇʏ {query.from_user.mention}</b>\n⚡ ɪ ꜰᴏᴜɴᴅ ꜱᴏᴍᴇ ᴄᴏᴍʙɪɴᴇᴅ / ꜰᴜʟʟ ꜱᴇᴀꜱᴏɴ ᴘᴀᴄᴋs ꜰᴏʀ ʏᴏᴜ.\n\n📂 ᴛʜᴇꜱᴇ ꜰɪʟᴇꜱ ᴍᴀʏ ᴄᴏɴᴛᴀɪɴ:\n• ᴍᴜʟᴛɪᴘʟᴇ ᴇᴘɪꜱᴏᴅᴇꜱ ɪɴ sɪɴɢᴇʟ ғɪʟᴇ\n• ꜰᴜʟʟ ꜱᴇᴀꜱᴏɴ ᴘᴀᴄᴋ\n\n⬇️ ꜱᴇʟᴇᴄᴛ ʏᴏᴜʀ ᴘʀᴇꜰᴇʀʀᴇᴅ ꜰɪʟᴇ ꜰʀᴏᴍ ʙᴇʟᴏᴡ.</b>\n\n━━━━━━━━━━━━━━━━━━━━\n⏳ <i>ᴄʟɪᴄᴋ ᴏɴ - ʙᴀᴄᴋ ᴛᴏ ᴍᴀɪɴ ᴘᴀɢᴇ ʙᴜᴛᴛᴏɴ ᴛᴏ ᴠɪᴇᴡ ᴀʟʟ ʀᴇsᴜʟᴛs</i>"
+
+                await query.message.edit_text(
+                    text=note,
+                    reply_markup=InlineKeyboardMarkup(btn),
+                    disable_web_page_preview=True,
+                    parse_mode=enums.ParseMode.HTML
+                )
 
         except MessageNotModified:
             pass
 
+            
     except Exception as e:
         LOGGER.error(f"Error In Combined Filter - {e}")
 
