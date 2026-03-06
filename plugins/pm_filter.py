@@ -1803,17 +1803,19 @@ async def advantage_spoll_choker(bot, query):
 
         for file in all_files:
             name = (file.file_name or "").lower()
+            caption = (file.caption or "").lower()
+            text = f"{name} {caption}"
 
             # language detect
             for lang_key, data in SMART_LANG_MAP.items():
                 for alias in data["aliases"]:
-                    if re.search(rf"(^|[.\s_-]){alias}([.\s_-]|$)", name):
+                    if re.search(rf"(^|[.\s_-]){alias}([.\s_-]|$)", text):
                         smart_languages.add(lang_key)
                         break
 
             # season detect
             for pattern in SMART_SEASON_REGEX:
-                match = re.search(pattern, name)
+                match = re.search(pattern, text)
                 if match:
                     num = re.search(r"\d{1,2}", match.group())
                     if num:
@@ -1821,14 +1823,28 @@ async def advantage_spoll_choker(bot, query):
                     break
 
             # quality detect
-            q = re.search(SMART_QUALITY_REGEX, name)
+            q = re.search(SMART_QUALITY_REGEX, text)
             if q:
                 smart_qualities.add(q.group())
 
             # 🔥 combined detect
-            has_season = any(re.search(pattern, name) for pattern in SMART_SEASON_REGEX)
+            has_season = any(re.search(pattern, text) for pattern in SMART_SEASON_REGEX)
 
-            if has_season and any(x in name for x in ["complete", "combined", "season pack", "full series"]):
+            episode_range = re.search(
+                r'(s\d{1,2}\s*-\s*s?\d{1,2})|(e\d{1,2}\s*-\s*e?\d{1,2})|(episode\s*\d{1,2}\s*-\s*\d{1,2})',
+                text
+			)
+
+            has_keyword = any(x in text for x in [
+                "complete", "season complete", "complete bengali series",
+                "complete hindi series", "complete bangladeshi series",
+                "complete bangladesi series", "full bangla series",
+                "complete english series", "full bengali series",
+                "full hindi series", "complete season", "all episodes",
+                "batch", "combined", "season pack",
+                "complete series", "full series"
+            ])
+            if ((has_season and has_keyword) or episode_range) and file not in smart_combined:
                 smart_combined.append(file)
 	
         key = f"{chat_id}-{user_msg.id}"
@@ -3024,8 +3040,22 @@ async def auto_filter(client, msg, spoll=False):
                     text = f"{name} {caption}"
                     # season detect
                     has_season = any(re.search(pattern, text) for pattern in SMART_SEASON_REGEX)
+                    episode_range = re.search(
+                        r'(s\d{1,2}\s*-\s*s?\d{1,2})|(e\d{1,2}\s*-\s*e?\d{1,2})|(episode\s*\d{1,2}\s*-\s*\d{1,2})',
+                        text
+					)
+
+                    has_keyword = any(x in text for x in [
+                        "complete", "season complete", "complete bengali series",
+                        "complete hindi series", "complete bangladeshi series",
+                        "complete bangladesi series", "full bangla series",
+                        "complete english series", "full bengali series",
+                        "full hindi series", "complete season", "all episodes",
+                        "batch", "combined", "season pack",
+                        "complete series", "full series"
+                    ])
                     # combined detect ONLY if season present
-                    if has_season and any(x in text for x in ["complete", "season complete", "complete bengali series", "complete hindi series", "complete Bangladeshi series", "complete bangladesi series", "full bangla series", "complete english series", "full bengali series", "full Hindi series", "complete season", "all episodes", "batch", "combined", "season pack", "COMBINED", "COMBiNED", "complete series", "full series"]):
+                    if ((has_season and has_keyword) or episode_range) and file not in smart_combined:
                         smart_combined.append(file)
 
                     # 🔤 Language detection
@@ -3121,8 +3151,22 @@ async def auto_filter(client, msg, spoll=False):
                                 text = f"{name} {caption}"
                                 # season detect
                                 has_season = any(re.search(pattern, text) for pattern in SMART_SEASON_REGEX)
+                                episode_range = re.search(
+                                    r'(s\d{1,2}\s*-\s*s?\d{1,2})|(e\d{1,2}\s*-\s*e?\d{1,2})|(episode\s*\d{1,2}\s*-\s*\d{1,2})',
+                                    text
+								)
+
+                                has_keyword = any(x in text for x in [
+                                    "complete", "season complete", "complete bengali series",
+                                    "complete hindi series", "complete bangladeshi series",
+                                    "complete bangladesi series", "full bangla series",
+                                    "complete english series", "full bengali series",
+                                    "full hindi series", "complete season", "all episodes",
+                                    "batch", "combined", "season pack",
+                                    "complete series", "full series"
+                                ])
                                 # combined detect ONLY if season present
-                                if has_season and any(x in text for x in ["complete", "season complete", "complete bengali series", "complete hindi series", "complete Bangladeshi series", "complete bangladesi series", "full bangla series", "complete english series", "full bengali series", "full Hindi series", "complete season", "all episodes", "batch", "combined", "season pack", "COMBINED", "COMBiNED", "complete series", "full series"]):
+                                if ((has_season and has_keyword) or episode_range) and file not in smart_combined:
                                     smart_combined.append(file)
 
                                 for lang_key, data in SMART_LANG_MAP.items():
