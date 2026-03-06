@@ -1721,17 +1721,11 @@ async def combined_info_popup(client, query):
 
     text = (
         f"👋 ʜᴇʏ {user.first_name}\n\n"
-        f"📦 ᴄᴏᴍʙɪɴᴇᴅ ᴘᴀᴄᴋꜱ ɪɴꜰᴏ\n"
-        f"━━━━━━━━━━━━━━━━━━\n\n"
-        f"📊 ᴛᴏᴛᴀʟ ᴘᴀᴄᴋꜱ : {packs}\n\n"
-        f"⚡ ᴛʜɪꜱ ꜱᴇᴄᴛɪᴏɴ ʟɪꜱᴛꜱ\n"
-        f"ᴄᴏᴍʙɪɴᴇᴅ ᴇᴘɪꜱᴏᴅᴇ ᴘᴀᴄᴋꜱ.\n\n"
+        f"📊 ᴛᴏᴛᴀʟ ᴄᴏᴍʙɪɴᴇᴅ ᴘᴀᴄᴋꜱ : {packs}\n\n"
         f"📂 ᴛʜᴇꜱᴇ ꜰɪʟᴇꜱ ᴍᴀʏ ɪɴᴄʟᴜᴅᴇ\n"
         f"• ᴍᴜʟᴛɪᴘʟᴇ ᴇᴘɪꜱᴏᴅᴇꜱ\n"
         f"• ᴄᴏᴍᴘʟᴇᴛᴇ ꜱᴇᴀꜱᴏɴ ᴘᴀᴄᴋ\n"
         f"• ꜰᴜʟʟ ꜱᴇʀɪᴇꜱ ᴘᴀᴄᴋ\n\n"
-        f"⬇️ ꜱᴇʟᴇᴄᴛ ᴀɴʏ ᴘᴀᴄᴋ\n"
-        f"ꜰʀᴏᴍ ᴛʜᴇ ʟɪꜱᴛ ʙᴇʟᴏᴡ."
     )
 
     await query.answer(text, show_alert=True)
@@ -3198,7 +3192,20 @@ async def auto_filter(client, msg, spoll=False):
             for file in files
         ]
         combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
-        
+
+        if not combined_files:
+            for f in files:
+                name = (f.file_name or "").lower()
+                caption = (f.caption or "").lower()
+                text = f"{name} {caption}"
+
+                if any(x in text for x in [
+                    "complete", "combined", "complete season",
+                    "season complete", "all episodes",
+                    "season pack", "complete series", "full series"
+                ]):
+                    combined_files.append(f)
+                    break
         top_row = [
             InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
             InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
@@ -3218,7 +3225,20 @@ async def auto_filter(client, msg, spoll=False):
     else:
         btn = []
         combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
-    
+
+        if not combined_files:
+            for f in files:
+                name = (f.file_name or "").lower()
+                caption = (f.caption or "").lower()
+                text = f"{name} {caption}"
+
+                if any(x in text for x in [
+                    "complete", "combined", "complete season",
+                    "season complete", "all episodes",
+                    "season pack", "complete series", "full series"
+                ]):
+                    combined_files.append(f)
+                    break
         top_row = [
             InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
             InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
