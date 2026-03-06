@@ -3025,7 +3025,7 @@ async def auto_filter(client, msg, spoll=False):
                     # season detect
                     has_season = any(re.search(pattern, text) for pattern in SMART_SEASON_REGEX)
                     # combined detect ONLY if season present
-                    if has_season and any(x in text for x in ["complete", "season complete", "complete season", "all episodes", "batch", "combined", "season pack", "COMBINED", "COMBiNED", "complete series", "full series"]):
+                    if has_season and any(x in text for x in ["complete", "season complete", "complete bengali series", "complete hindi series", "complete Bangladeshi series", "complete bangladesi series", "full bangla series", "complete english series", "full bengali series", "full Hindi series", "complete season", "all episodes", "batch", "combined", "season pack", "COMBINED", "COMBiNED", "complete series", "full series"]):
                         smart_combined.append(file)
 
                     # 🔤 Language detection
@@ -3122,7 +3122,7 @@ async def auto_filter(client, msg, spoll=False):
                                 # season detect
                                 has_season = any(re.search(pattern, text) for pattern in SMART_SEASON_REGEX)
                                 # combined detect ONLY if season present
-                                if has_season and any(x in text for x in ["complete", "combined", "complete season", "season complete", "all episodes", "season pack", "COMBINED", "COMBiNED", "complete series", "full series"]):
+                                if has_season and any(x in text for x in ["complete", "season complete", "complete bengali series", "complete hindi series", "complete Bangladeshi series", "complete bangladesi series", "full bangla series", "complete english series", "full bengali series", "full Hindi series", "complete season", "all episodes", "batch", "combined", "season pack", "COMBINED", "COMBiNED", "complete series", "full series"]):
                                     smart_combined.append(file)
 
                                 for lang_key, data in SMART_LANG_MAP.items():
@@ -3202,7 +3202,7 @@ async def auto_filter(client, msg, spoll=False):
                 if any(x in text for x in [
                     "complete", "combined", "complete season",
                     "season complete", "all episodes",
-                    "season pack", "complete series", "full series"
+                    "season pack", "full bengali series", "complete Bangladeshi series", "bengali series", "Bollywood series", "English series", "Bangladeshi series", "complete series", "full series"
                 ]):
                     combined_files.append(f)
                     break
@@ -3235,7 +3235,7 @@ async def auto_filter(client, msg, spoll=False):
                 if any(x in text for x in [
                     "complete", "combined", "complete season",
                     "season complete", "all episodes",
-                    "season pack", "complete series", "full series"
+                    "season pack", "complete series", "full series", "full bengali series", "complete Bangladeshi series", "bengali series", "Bollywood series", "English series", "Bangladeshi series"
                 ]):
                     combined_files.append(f)
                     break
