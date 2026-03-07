@@ -1025,7 +1025,7 @@ async def filter_language_cb_handler(client: Client, query: CallbackQuery):
             all_files = temp.GETALL.get(key, [])
 
             # 🔁 BACK TO MAIN FILE LIST
-            if qual == "homepage":
+            if lang == "homepage":
                 settings = await get_settings(chat_id)
                 per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
 
@@ -1395,7 +1395,7 @@ async def filter_season_cb_handler(client: Client, query: CallbackQuery):
             all_files = temp.GETALL.get(key, [])
             settings = await get_settings(chat_id)
             # 🔁 BACK TO MAIN FILE LIST
-            if qual == "homepage":
+            if seas == "homepage":
                 settings = await get_settings(chat_id)
                 per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
 
