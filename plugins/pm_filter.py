@@ -3222,7 +3222,8 @@ async def auto_filter(client, msg, spoll=False):
         # already stored full result earlier, do nothing
         pass
     else:
-        temp.GETALL[key] = files
+        if key not in temp.GETALL:
+            temp.GETALL[key] = files
     temp.SHORT[message.from_user.id] = message.chat.id
     if settings.get('button'):
         btn = [
