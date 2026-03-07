@@ -81,7 +81,7 @@ def is_meaningful_query(search: str) -> bool:
             continue
 
         # If token has letters → meaningful
-        if re.search(r"[a-zA-Z]", token):
+        if re.search(r"[a-zA-Z]", token) or re.fullmatch(r"\d{1,4}", token):
             meaningful = True
             break
 
