@@ -669,14 +669,11 @@ async def filter_qualities_cb_handler(client: Client, query: CallbackQuery):
 
             # 🔁 BACK TO MAIN FILE LIST
             if qual == "homepage":
-                files = all_files
+                settings = await get_settings(chat_id)
+                per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
 
-                # 🔄 restore pagination state
-                state = temp.MAIN_STATE.get(key, {})
-                per_page = state.get("per_page", 10)
-                total_results = state.get("total_results", len(all_files))
-
-                files = files[offset: offset + per_page]
+                total_results = len(all_files)
+                files = all_files[offset: offset + per_page]
 
                 if total_results > offset + per_page:
                     n_offset = offset + per_page
