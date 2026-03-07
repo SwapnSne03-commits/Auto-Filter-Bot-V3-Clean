@@ -310,11 +310,16 @@ async def next_page(bot, query):
                 n_offset = 0
 
         else:
-            # 🔹 NORMAL HOMEPAGE PAGINATION MODE
-            files, n_offset, total = await get_search_results(
-                query.message.chat.id, search, offset=offset, filter=True
-            )
+            # 🔹 NORMAL HOMEPAGE PAGINATION MODE (use stored results)
+            all_files = temp.GETALL.get(key) or files
 
+            total = len(all_files)
+            files = all_files[offset: offset + per_page]
+
+            if total > offset + per_page:
+                n_offset = offset + per_page
+            else:
+                n_offset = 0
             # normalize n_offset
         try:
             n_offset = int(n_offset)
