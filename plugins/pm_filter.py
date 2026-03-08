@@ -513,6 +513,8 @@ async def start_multi_select(client, query):
     # ensure selection storage exists
     temp.MULTI_FILES.setdefault(key, set())
 
+    all_files = temp.FILTER_FILES.get(key) or temp.GETALL.get(key, [])
+
     await query.answer()  # close loading spinner
 
     await build_multi_page(client, query, key, offset)
@@ -522,7 +524,7 @@ async def build_multi_page(client, query, key, offset):
     settings = await get_settings(query.message.chat.id)
     per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
 
-    all_files = temp.GETALL.get(key, [])
+    all_files = temp.FILTER_FILES.get(key) or temp.GETALL.get(key, [])
     total = len(all_files)
 
     files = all_files[offset: offset + per_page]
@@ -973,6 +975,7 @@ async def filter_qualities_cb_handler(client: Client, query: CallbackQuery):
 
             # 🔁 BACK TO MAIN FILE LIST
             if qual == "homepage":
+                temp.FILTER_FILES.pop(key, None)
                 settings = await get_settings(chat_id)
                 per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
 
@@ -991,7 +994,8 @@ async def filter_qualities_cb_handler(client: Client, query: CallbackQuery):
                     f for f in all_files
                     if qual.lower() in (f.file_name or "").lower()
                 ]
-
+                temp.FILTER_FILES[key] = filtered_files
+				
                 total_results = len(filtered_files)
 
                 settings = await get_settings(chat_id)
@@ -1145,7 +1149,7 @@ async def filter_qualities_cb_handler(client: Client, query: CallbackQuery):
     except Exception as e:
         LOGGER.error(f"Error In Quality Filter - {e}")
 # ================= OLD LANGUAGE CALLBACK =================
-# ================= OLD LANGUAGE CALLBACK =================
+#================= OLD LANGUAGE CALLBACK =================
 async def old_languages_cb(client: Client, query: CallbackQuery):
     try:
         try:
@@ -1341,6 +1345,7 @@ async def filter_language_cb_handler(client: Client, query: CallbackQuery):
 
             # 🔁 BACK TO MAIN FILE LIST
             if lang == "homepage":
+                temp.FILTER_FILES.pop(key, None)
                 settings = await get_settings(chat_id)
                 per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
 
@@ -1360,6 +1365,8 @@ async def filter_language_cb_handler(client: Client, query: CallbackQuery):
                     f for f in all_files
                     if any(alias in (f.file_name or "").lower() for alias in aliases)
 				]
+
+                temp.FILTER_FILES[key] = filtered_files
 
                 total_results = len(filtered_files)
 
@@ -1722,6 +1729,7 @@ async def filter_season_cb_handler(client: Client, query: CallbackQuery):
             settings = await get_settings(chat_id)
             # 🔁 BACK TO MAIN FILE LIST
             if seas == "homepage":
+                temp.FILTER_FILES.pop(key, None)
                 settings = await get_settings(chat_id)
                 per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
 
@@ -1740,6 +1748,8 @@ async def filter_season_cb_handler(client: Client, query: CallbackQuery):
                     if seas.lower() in (f.file_name or "").lower()
                 ]
 
+                temp.FILTER_FILES[key] = filtered_files
+	
                 total_results = len(filtered_files)
 
                 per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
@@ -1932,6 +1942,8 @@ async def combined_filter(client, query):
         # 🔹 GET COMBINED FILES
         all_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
 
+        temp.FILTER_FILES[key] = all_files
+
         total_packs = len(all_files)
 
         if not all_files:
@@ -1966,7 +1978,12 @@ async def combined_filter(client, query):
                 callback_data="combined_info"
             )
         ])
-
+        btn.append([
+            InlineKeyboardButton(
+                "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
+                callback_data=f"ms#{key}#{offset}"
+            )
+        ])
         # 🔹 Combined Files List
         btn += [
             [
