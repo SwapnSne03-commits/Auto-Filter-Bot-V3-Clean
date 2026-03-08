@@ -505,13 +505,17 @@ async def start_multi_select(client, query):
         return await query.answer(
             "⚠️ This session expired.\nPlease search again.",
             show_alert=True
-	    )
+        )
 
+    # activate multi select mode
     temp.MULTI_SELECT[key] = True
+
+    # ensure selection storage exists
     temp.MULTI_FILES.setdefault(key, set())
 
-    await build_multi_page(client, query, key, offset)
+    await query.answer()  # close loading spinner
 
+    await build_multi_page(client, query, key, offset)
 
 async def build_multi_page(client, query, key, offset):
 
@@ -528,7 +532,7 @@ async def build_multi_page(client, query, key, offset):
     else:
         n_offset = None
 
-    selected = temp.MULTI_FILES.get(key, set())
+    selected = temp.MULTI_FILES.setdefault(key, set())
     count = len(selected)
 
     btn = []
@@ -548,12 +552,14 @@ async def build_multi_page(client, query, key, offset):
     # FILE LIST
     for f in files:
 
-        mark = "☑" if f.file_id in selected else "☐"
+        fid = str(f.file_id)
+
+        mark = "☑" if fid in selected else "☐"
 
         btn.append([
             InlineKeyboardButton(
                 text=f"{mark} {silent_size(f.file_size)} ✦ {clean_filename(f.file_name)}",
-                callback_data=f"mfile#{key}#{f.file_id}#{offset}"
+                callback_data=f"mfile#{key}#{fid}#{offset}"
             )
         ])
 
@@ -586,11 +592,13 @@ async def build_multi_page(client, query, key, offset):
             )
         )
 
-    btn.append(nav)
+    if nav:  # prevent empty row
+        btn.append(nav)
 
     await query.edit_message_reply_markup(
         reply_markup=InlineKeyboardMarkup(btn)
-    )
+	)
+    
 
 
 # ================= SELECT / UNSELECT =================
@@ -601,39 +609,54 @@ async def toggle_multi_file(client, query):
     _, key, fid, offset = query.data.split("#")
     offset = int(offset)
 
+    fid = str(fid)  # 🔒 prevent type mismatch
+
     if key not in temp.GETALL:
         return await query.answer(
             "⚠️ This session expired.\nPlease search again.",
             show_alert=True
-	    )
+        )
 
     selected = temp.MULTI_FILES.setdefault(key, set())
 
-    # LIMIT (optional safety)
+    # LIMIT safety
     if len(selected) >= 15 and fid not in selected:
         return await query.answer(
             "⚠️ Maximum 15 files allowed",
             show_alert=True
         )
 
+    # toggle
     if fid in selected:
         selected.remove(fid)
     else:
         selected.add(fid)
+
+    await query.answer()  # smoother UX
 
     await build_multi_page(client, query, key, offset)
 
 
 # ================= SEND FILES =================
 
-
 @Client.on_callback_query(filters.regex("^msend#"))
 async def send_multi_files(client, query):
 
     from plugins.commands import send_file_pipeline
+
     _, key = query.data.split("#")
 
+    if key not in temp.GETALL:
+        return await query.answer(
+            "⚠️ Session expired. Please search again.",
+            show_alert=True
+        )
+
     selected = list(temp.MULTI_FILES.get(key, []))
+
+    # 🔒 selected file validation (important)
+    valid_ids = {f.file_id for f in temp.GETALL.get(key, [])}
+    selected = [fid for fid in selected if fid in valid_ids]
 
     if not selected:
         return await query.answer(
@@ -643,80 +666,25 @@ async def send_multi_files(client, query):
 
     grp_id = key.split("-")[0]
 
-    # send files through pipeline (caption + auto delete preserved)
     for fid in selected:
-
         try:
             await send_file_pipeline(
                 client,
-                query.message,
+                query,
                 fid,
                 grp_id
             )
-
-            await asyncio.sleep(0.7)  # flood protection
-
+            await asyncio.sleep(0.6)
         except Exception:
             pass
 
-    # reset selection memory
+    # reset selection
     temp.MULTI_FILES.pop(key, None)
     temp.MULTI_SELECT.pop(key, None)
 
-    await query.answer(
-        "✅ Selected files sent",
-        show_alert=True
-    )
+    await query.answer("✅ Selected files sent", show_alert=True)
 
-    # ================= RESTORE EXISTING RESULT PAGE =================
-
-    all_files = temp.GETALL.get(key, [])
-
-    if not all_files:
-        return
-
-    settings = await get_settings(query.message.chat.id)
-    per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
-
-    files = all_files[:per_page]
-
-    btn = [
-        [
-            InlineKeyboardButton(
-                text=f"{silent_size(f.file_size)} ✦ {extract_tag(f.file_name)} {clean_filename(f.file_name)}",
-                callback_data=f"file#{f.file_id}"
-            )
-        ]
-        for f in files
-    ]
-
-    combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
-
-    # filter buttons
-    btn.insert(0, [
-        InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
-        InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
-        InlineKeyboardButton("ꜱᴇᴀꜱᴏɴ", callback_data=f"seasons#{key}#0")
-    ])
-
-    # combined + select button
-    if combined_files:
-        btn.insert(1, [
-            InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"fc#{key}#0"),
-            InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#0")
-        ])
-    else:
-        btn.insert(1, [
-            InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#0")
-        ])
-
-    # restore same message (NO NEW SEARCH)
-    try:
-        await query.message.edit_reply_markup(
-            reply_markup=InlineKeyboardMarkup(btn)
-        )
-    except:
-        pass
+    await restore_main_page(client, query, key)
 
 #================= CANCEL =================
 
@@ -725,19 +693,28 @@ async def cancel_multi_select(client, query):
 
     _, key = query.data.split("#")
 
-    # clear selection memory
     temp.MULTI_FILES.pop(key, None)
     temp.MULTI_SELECT.pop(key, None)
 
     await query.answer("Selection cancelled")
 
-    # get existing stored files (no new search)
-    all_files = temp.GETALL.get(key, [])
+    await restore_main_page(client, query, key)
+
+
+async def restore_main_page(client, query, key):
+
+    if key not in temp.GETALL:
+        return
+
+    all_files = temp.GETALL.get(key)
 
     settings = await get_settings(query.message.chat.id)
     per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
 
     files = all_files[:per_page]
+    total = len(all_files)
+
+    req = query.from_user.id   # 🔑 requester id
 
     btn = [
         [
@@ -751,14 +728,12 @@ async def cancel_multi_select(client, query):
 
     combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
 
-    # top filter buttons
     btn.insert(0, [
         InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
         InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
         InlineKeyboardButton("ꜱᴇᴀꜱᴏɴ", callback_data=f"seasons#{key}#0")
     ])
 
-    # combined + select
     if combined_files:
         btn.insert(1, [
             InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"fc#{key}#0"),
@@ -769,7 +744,18 @@ async def cancel_multi_select(client, query):
             InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#0")
         ])
 
-    # restore same message
+    # pagination fix
+    if total > per_page:
+        btn.append([
+            InlineKeyboardButton("ᴘᴀɢᴇ", callback_data="pages"),
+            InlineKeyboardButton(f"1/{math.ceil(total/per_page)}", callback_data="pages"),
+            InlineKeyboardButton("ɴᴇxᴛ ⋟", callback_data=f"next_{req}_{key}_{per_page}")
+        ])
+    else:
+        btn.append([
+            InlineKeyboardButton("↭ ɴᴏ ᴍᴏʀᴇ ᴘᴀɢᴇꜱ ᴀᴠᴀɪʟᴀʙʟᴇ ↭", callback_data="pages")
+        ])
+
     await query.edit_message_reply_markup(
         reply_markup=InlineKeyboardMarkup(btn)
 	)
