@@ -554,7 +554,7 @@ async def build_multi_page(client, query, key, offset):
 
         fid = str(f.file_id)
 
-        mark = "☑" if fid in selected else "☐"
+        mark = "☑" if str(f.file_id) in selected else "☐"
 
         btn.append([
             InlineKeyboardButton(
@@ -641,65 +641,60 @@ async def toggle_multi_file(client, query):
     await build_multi_page(client, query, key, offset)
 
 
-# ================= SEND FILES =================
+#================= SEND FILES =================
 
 @Client.on_callback_query(filters.regex("^msend#"))
 async def send_multi_files(client, query):
 
-    from plugins.commands import send_file_pipeline
+from plugins.commands import send_file_pipeline
 
-    _, key = query.data.split("#")
+_, key = query.data.split("#")
 
-    # session check
-    if key not in temp.GETALL:
-        return await query.answer(
-            "⚠️ Session expired. Please search again.",
-            show_alert=True
-        )
+if key not in temp.GETALL:
+    return await query.answer(
+        "⚠️ Session expired. Please search again.",
+        show_alert=True
+    )
 
-    # selected files
-    selected = list(temp.MULTI_FILES.get(key, []))
+# copy selection safely
+selected = list(temp.MULTI_FILES.get(key, set())).copy()
 
-    # remove invalid ids
-    valid_ids = {str(f.file_id) for f in temp.GETALL.get(key, [])}
-    selected = [fid for fid in selected if str(fid) in valid_ids]
+if not selected:
+    return await query.answer(
+        "⚠️ You didn't select any files",
+        show_alert=True
+    )
 
-    if not selected:
-        return await query.answer(
-            "⚠️ You didn't select any files",
-            show_alert=True
-        )
+# answer instantly (prevents QUERY_ID_INVALID)
+try:
+    await query.answer("📤 Sending selected files...", show_alert=False)
+except:
+    pass
 
-    # ⚡ answer immediately (prevents QUERY_ID_INVALID)
+grp_id = key.split("-")[0]
+
+# send files one by one
+for fid in selected:
     try:
-        await query.answer("📤 Sending selected files...", show_alert=False)
-    except:
-        pass
+        await send_file_pipeline(
+            client,
+            query,
+            str(fid),
+            grp_id
+        )
+        await asyncio.sleep(0.35)
+    except Exception as e:
+        print("Send error:", e)
 
-    grp_id = key.split("-")[0]
+# clear selection FIRST
+temp.MULTI_FILES.pop(key, None)
+temp.MULTI_SELECT.pop(key, None)
 
-    # send files
-    for fid in selected:
-        try:
-            await send_file_pipeline(
-                client,
-                query,
-                fid,
-                grp_id
-            )
-            await asyncio.sleep(0.35)
-        except Exception:
-            pass
-
-    # reset selection
-    temp.MULTI_FILES.pop(key, None)
-    temp.MULTI_SELECT.pop(key, None)
-
-    # restore result page
-    try:
-        await restore_main_page(client, query, key)
-    except:
-        pass
+# restore main page
+try:
+    await restore_main_page(client, query, key)
+except Exception as e:
+    print("Restore page error:", e)
 
 #================= CANCEL =================
 
