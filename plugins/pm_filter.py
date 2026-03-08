@@ -622,7 +622,7 @@ async def build_multi_page(client, query, key, offset):
 @Client.on_callback_query(filters.regex("^mfile#"))
 async def toggle_multi_file(client, query):
 
-    _, key, offset = query.data.split("#")
+    _, key, fid, offset = query.data.split("#")
 
     try:
         offset = int(offset)
@@ -635,9 +635,9 @@ async def toggle_multi_file(client, query):
         return await query.answer(
             "🚫 ɴᴏᴛ ʏᴏᴜʀ ʀᴇǫᴜᴇsᴛ ʙᴜᴅᴅʏ !!",
             show_alert=True
-		)
+        )
 
-    fid = str(fid)  # 🔒 prevent type mismatch
+    fid = str(fid)
 
     if key not in temp.GETALL:
         return await query.answer(
@@ -648,23 +648,22 @@ async def toggle_multi_file(client, query):
     selected = temp.MULTI_FILES.setdefault(key, set())
 
     valid_ids = {str(f.file_id) for f in temp.GETALL.get(key, [])}
-    if str(fid) not in valid_ids:
+
+    if fid not in valid_ids:
         return
-		
-    # LIMIT safety
+
     if len(selected) >= 15 and fid not in selected:
         return await query.answer(
             "⚠️ Maximum 15 files allowed",
             show_alert=True
         )
 
-    # toggle
     if fid in selected:
         selected.remove(fid)
     else:
         selected.add(fid)
 
-    await query.answer()  # smoother UX
+    await query.answer()
 
     await build_multi_page(client, query, key, offset)
 
@@ -2292,7 +2291,8 @@ async def cb_handler(client: Client, query: CallbackQuery):
         await query.message.delete()     
         
     if query.data.startswith("file"):
-        ident, file_id = query.data.split("#")
+        parts = query.data.split("#")
+        file_id = parts[1]
         user = None
         if query.message.reply_to_message and query.message.reply_to_message.from_user:
             user = query.message.reply_to_message.from_user.id
@@ -2302,8 +2302,12 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 show_alert=True
             )
             return
-        await query.answer(url=f"https://t.me/{temp.U_NAME}?start=file_{query.message.chat.id}_{file_id}")          
-                            
+        chat_id = query.message.chat.id if query.message else query.from_user.id
+
+        await query.answer(
+            url=f"https://t.me/{temp.U_NAME}?start=file_{chat_id}_{file_id}"
+        )
+		
     elif query.data.startswith("sendfiles"):
         clicked = query.from_user.id
         ident, key = query.data.split("#") 
