@@ -656,7 +656,7 @@ async def send_multi_files(client, query):
             show_alert=True
         )
 
-    selected = list(temp.MULTI_FILES.get(key, set())).copy()
+    selected = list(temp.MULTI_FILES.get(key, set()))
 
     if not selected:
         return await query.answer(
@@ -665,32 +665,32 @@ async def send_multi_files(client, query):
         )
 
     # answer instantly
-    try:
-        await query.answer("📤 Sending selected files...", show_alert=False)
-    except:
-        pass
+    await query.answer("📤 Sending selected files...", show_alert=False)
 
     grp_id = key.split("-")[0]
 
+    # 🔹 clear selection first
+    temp.MULTI_FILES.pop(key, None)
+    temp.MULTI_SELECT.pop(key, None)
+
+    # 🔹 restore main page
+    try:
+        await restore_main_page(client, query, key)
+    except:
+        pass
+
+    # 🔹 send files
     for fid in selected:
         try:
             await send_file_pipeline(
                 client,
-                query,
+                query.message,   # IMPORTANT FIX
                 str(fid),
                 grp_id
             )
             await asyncio.sleep(0.35)
         except Exception as e:
             print("Send error:", e)
-
-    temp.MULTI_FILES.pop(key, None)
-    temp.MULTI_SELECT.pop(key, None)
-
-    try:
-        await restore_main_page(client, query, key)
-    except Exception as e:
-        print("Restore page error:", e)
 
 
 #================= CANCEL =================
