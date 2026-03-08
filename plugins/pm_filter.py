@@ -619,6 +619,10 @@ async def toggle_multi_file(client, query):
 
     selected = temp.MULTI_FILES.setdefault(key, set())
 
+    valid_ids = {str(f.file_id) for f in temp.GETALL.get(key, [])}
+    if str(fid) not in valid_ids:
+        return
+		
     # LIMIT safety
     if len(selected) >= 15 and fid not in selected:
         return await query.answer(
@@ -646,17 +650,19 @@ async def send_multi_files(client, query):
 
     _, key = query.data.split("#")
 
+    # session check
     if key not in temp.GETALL:
         return await query.answer(
             "⚠️ Session expired. Please search again.",
             show_alert=True
         )
 
+    # selected files
     selected = list(temp.MULTI_FILES.get(key, []))
 
-    # fix mismatch bug
+    # remove invalid ids
     valid_ids = {str(f.file_id) for f in temp.GETALL.get(key, [])}
-    selected = [fid for fid in selected if fid in valid_ids]
+    selected = [fid for fid in selected if str(fid) in valid_ids]
 
     if not selected:
         return await query.answer(
@@ -664,8 +670,15 @@ async def send_multi_files(client, query):
             show_alert=True
         )
 
+    # ⚡ answer immediately (prevents QUERY_ID_INVALID)
+    try:
+        await query.answer("📤 Sending selected files...", show_alert=False)
+    except:
+        pass
+
     grp_id = key.split("-")[0]
 
+    # send files
     for fid in selected:
         try:
             await send_file_pipeline(
@@ -674,7 +687,7 @@ async def send_multi_files(client, query):
                 fid,
                 grp_id
             )
-            await asyncio.sleep(0.6)
+            await asyncio.sleep(0.35)
         except Exception:
             pass
 
@@ -682,10 +695,11 @@ async def send_multi_files(client, query):
     temp.MULTI_FILES.pop(key, None)
     temp.MULTI_SELECT.pop(key, None)
 
-    await query.answer("✅ All selected files sent", show_alert=True)
-
-    # restore main result page
-    await restore_main_page(client, query, key)
+    # restore result page
+    try:
+        await restore_main_page(client, query, key)
+    except:
+        pass
 
 #================= CANCEL =================
 
