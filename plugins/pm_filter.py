@@ -725,6 +725,7 @@ async def send_multi_files(client, query):
     # clear selection first
     temp.MULTI_FILES.pop(key, None)
     temp.MULTI_SELECT.pop(key, None)
+    temp.FILTER_FILES.pop(key, None)
 
     temp.PAGE_STATE[key] = {
         "current_offset": 0
