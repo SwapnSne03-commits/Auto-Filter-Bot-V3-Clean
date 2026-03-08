@@ -692,7 +692,7 @@ async def send_multi_files(client, query):
         )
 
     user_id = query.from_user.id
-    grp_id = key.split("-")[0]
+    grp_id = query.message.chat.id
 
     selected = list(temp.MULTI_FILES.get(key, set()))
 
@@ -726,6 +726,9 @@ async def send_multi_files(client, query):
     temp.MULTI_FILES.pop(key, None)
     temp.MULTI_SELECT.pop(key, None)
 
+    temp.PAGE_STATE[key] = {
+        "current_offset": 0
+	}
     # restore main result page
     try:
         await restore_main_page(client, query, key)
