@@ -501,6 +501,12 @@ async def start_multi_select(client, query):
     _, key, offset = query.data.split("#")
     offset = int(offset)
 
+    if key not in temp.GETALL:
+        return await query.answer(
+            "⚠️ This session expired.\nPlease search again.",
+            show_alert=True
+	    )
+
     temp.MULTI_SELECT[key] = True
     temp.MULTI_FILES.setdefault(key, set())
 
@@ -595,6 +601,12 @@ async def toggle_multi_file(client, query):
     _, key, fid, offset = query.data.split("#")
     offset = int(offset)
 
+    if key not in temp.GETALL:
+        return await query.answer(
+            "⚠️ This session expired.\nPlease search again.",
+            show_alert=True
+	    )
+
     selected = temp.MULTI_FILES.setdefault(key, set())
 
     # LIMIT (optional safety)
@@ -619,6 +631,18 @@ async def send_multi_files(client, query):
 
     _, key = query.data.split("#")
 
+    if key not in temp.GETALL:
+        return await query.answer(
+            "⚠️ This session expired.\nPlease search again.",
+            show_alert=True
+	    )
+    # session safety
+    if key not in temp.GETALL:
+        return await query.answer(
+            "⚠️ This session expired.\nPlease search again.",
+            show_alert=True
+        )
+
     files = list(temp.MULTI_FILES.get(key, []))
 
     if not files:
@@ -627,17 +651,46 @@ async def send_multi_files(client, query):
             show_alert=True
         )
 
+    settings = await get_settings(query.message.chat.id)
+
     for fid in files:
 
         try:
+            file_obj = next(
+                (f for f in temp.GETALL.get(key, []) if f.file_id == fid),
+                None
+            )
+
+            caption = None
+
+            if file_obj:
+                try:
+                    caption = await get_cap(
+                        settings,
+                        "0",
+                        [file_obj],
+                        query,
+                        1,
+                        "",
+                        0
+                    )
+                except:
+                    caption = file_obj.caption
+
             await client.send_cached_media(
                 chat_id=query.from_user.id,
-                file_id=fid
+                file_id=fid,
+                caption=caption
             )
-        except:
+
+            # flood protection
+            await asyncio.sleep(0.4)
+
+        except Exception as e:
+            print(e)
             pass
 
-    # RESET selection after sending
+    # clear selection memory
     temp.MULTI_FILES.pop(key, None)
     temp.MULTI_SELECT.pop(key, None)
 
@@ -646,37 +699,50 @@ async def send_multi_files(client, query):
         show_alert=True
     )
 
+    # restore original result page
+    all_files = temp.GETALL.get(key, [])
 
-# ================= CANCEL =================
+    per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
+
+    files = all_files[:per_page]
+    offset = per_page if len(all_files) > per_page else ""
+
+    k = (FRESH.get(key), files, offset, len(all_files))
+
+    await auto_filter(
+        client,
+        query.message.reply_to_message,
+        k
+	)
+
+#================= CANCEL =================
 
 @Client.on_callback_query(filters.regex("^mcancel#"))
 async def cancel_multi_select(client, query):
 
     _, key = query.data.split("#")
 
-    # reset memory
     temp.MULTI_FILES.pop(key, None)
     temp.MULTI_SELECT.pop(key, None)
 
     await query.answer("Selection cancelled")
 
-    # restore main result page
-    search = FRESH.get(key)
+    # restore original result
+    all_files = temp.GETALL.get(key, [])
 
-    files, offset, total = await get_search_results(
-        query.message.chat.id,
-        search,
-        offset=0,
-        filter=True
-    )
+    settings = await get_settings(query.message.chat.id)
+    per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
 
-    k = (search, files, offset, total)
+    files = all_files[:per_page]
+    offset = per_page if len(all_files) > per_page else ""
+
+    k = (FRESH.get(key), files, offset, len(all_files))
 
     await auto_filter(
         client,
         query.message.reply_to_message,
         k
-)
+	)
 
 # ================= OLD QUALITY CALLBACK =================
 async def old_qualities_cb(client: Client, query: CallbackQuery):
@@ -2999,7 +3065,11 @@ async def auto_filter(client, msg, spoll=False):
     if not message or not isinstance(getattr(message, "text", None), str):
         return
     key = f"{message.chat.id}-{message.reply_to_message.id if message.reply_to_message else message.id}"
-	
+
+    # reset multi select session
+    temp.MULTI_SELECT.pop(key, None)
+    temp.MULTI_FILES.pop(key, None)
+
     curr_time = datetime.now(pytz.timezone('Asia/Kolkata')).time()
     # ================= SMART MODE INIT =================
     if SMART_SELECTION_MODE:
@@ -3455,9 +3525,20 @@ async def auto_filter(client, msg, spoll=False):
                 InlineKeyboardButton(
                     "ᴄᴏᴍʙɪɴᴇᴅ",
                     callback_data=f"fc#{key}#0"
+                ),
+                InlineKeyboardButton(
+                    "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
+                    callback_data=f"ms#{key}#0"
                 )
             ])
-        
+        else:
+            btn.insert(1, [
+                InlineKeyboardButton(
+                    "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
+                    callback_data=f"ms#{key}#0"
+                )
+            ])
+
     else:
         btn = []
         combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
@@ -3488,9 +3569,20 @@ async def auto_filter(client, msg, spoll=False):
                 InlineKeyboardButton(
                     "ᴄᴏᴍʙɪɴᴇᴅ",
                     callback_data=f"fc#{key}#0"
+                ),
+                InlineKeyboardButton(
+                    "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
+                    callback_data=f"ms#{key}#0"
+				)
+            ])
+        else:
+            btn.insert(1, [
+                InlineKeyboardButton(
+                    "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
+                    callback_data=f"ms#{key}#0"
                 )
             ])
-        
+
     if offset != "":
         req = message.from_user.id if message.from_user else 0
         try:
