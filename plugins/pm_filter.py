@@ -646,7 +646,7 @@ async def toggle_multi_file(client, query):
 @Client.on_callback_query(filters.regex("^msend#"))
 async def send_multi_files(client, query):
 
-    from plugins.commands import send_file_pipeline
+    from plugins.commands import send_file_pipeline, auto_delete_messages
 
     _, key = query.data.split("#")
 
@@ -664,34 +664,41 @@ async def send_multi_files(client, query):
             show_alert=True
         )
 
-    # answer instantly
     await query.answer("📤 Sending selected files...", show_alert=False)
 
     grp_id = key.split("-")[0]
 
-    # 🔹 clear selection first
     temp.MULTI_FILES.pop(key, None)
     temp.MULTI_SELECT.pop(key, None)
 
-    # 🔹 restore main page
     try:
         await restore_main_page(client, query, key)
     except:
         pass
 
-    # 🔹 send files
-    for fid in selected:
-        try:
-            await send_file_pipeline(
-                client,
-                query,   # IMPORTANT FIX
-                str(fid),
-                grp_id
-            )
-            await asyncio.sleep(0.25)
-        except Exception as e:
-            print("Send error:", e)
+    sent_msgs = []
+    delete_time = None
 
+    for fid in selected:
+        result = await send_file_pipeline(client, query, str(fid), grp_id)
+
+        if result:
+            msg, delete_time = result
+            sent_msgs.append(msg)
+
+        await asyncio.sleep(0.25)
+
+    if sent_msgs and delete_time:
+
+        notice = await client.send_message(
+            query.from_user.id,
+            f"<b>❗️IMPORTANT\n\nThese files will be deleted in {get_time(delete_time)}</b>",
+            parse_mode=enums.ParseMode.HTML
+        )
+
+        asyncio.create_task(
+            auto_delete_messages(client, sent_msgs, notice, delete_time)
+	)
 
 #================= CANCEL =================
 
