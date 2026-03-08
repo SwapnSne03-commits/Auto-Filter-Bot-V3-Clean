@@ -625,11 +625,12 @@ async def toggle_multi_file(client, query):
 
 
 # ================= SEND FILES =================
-from plugins.commands import send_file_pipeline
+
 
 @Client.on_callback_query(filters.regex("^msend#"))
 async def send_multi_files(client, query):
 
+    from plugins.commands import send_file_pipeline
     _, key = query.data.split("#")
 
     selected = list(temp.MULTI_FILES.get(key, []))
