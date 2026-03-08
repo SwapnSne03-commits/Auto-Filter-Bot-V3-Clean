@@ -43,6 +43,7 @@ if URL:
 async def SilentXBotz_start():
     LOGGER.info('Initializing Your Bot!')
     await SilentX.start()
+    asyncio.create_task(auto_memory_cleaner())
     bot_info = await SilentX.get_me()
     SilentX.username = bot_info.username
     await initialize_clients()
@@ -99,7 +100,6 @@ async def SilentXBotz_start():
     
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
-    loop.create_task(auto_memory_cleaner())  # ✅ HERE
     try:
         loop.run_until_complete(SilentXBotz_start())
     except KeyboardInterrupt:
