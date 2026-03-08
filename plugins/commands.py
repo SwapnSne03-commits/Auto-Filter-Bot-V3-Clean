@@ -149,8 +149,8 @@ def build_del_files_buttons(session):
     return InlineKeyboardMarkup(buttons)
 
 async def send_file_pipeline(client, query, file_id, grp_id):
-    files_ = await get_file_details(file_id)
 
+    files_ = await get_file_details(file_id)
     if not files_:
         return
 
@@ -162,7 +162,6 @@ async def send_file_pipeline(client, query, file_id, grp_id):
     f_caption = files.caption
 
     settings = await get_settings(int(grp_id))
-
     DELETE_TIME = settings.get("auto_del_time", AUTO_DELETE_TIME)
     SILENTX_CAPTION = settings.get('caption', CUSTOM_FILE_CAPTION)
 
@@ -197,29 +196,43 @@ async def send_file_pipeline(client, query, file_id, grp_id):
             [InlineKeyboardButton("📑 ᴠɪᴇᴡ ᴀᴜᴅɪᴏ/sᴜʙᴛɪᴛʟᴇ ᴅᴇᴛᴀɪʟs", callback_data="trackinfo")]
         ]
 
-    msg = await client.send_cached_media(
-        chat_id=query.from_user.id,
-        file_id=file_id,
-        caption=f_caption,
-        protect_content=settings.get('file_secure', PROTECT_CONTENT),
-        reply_markup=InlineKeyboardMarkup(btn)
-    )
+    try:
+        msg = await client.send_cached_media(
+            chat_id=query.from_user.id,
+            file_id=file_id,
+            caption=f_caption,
+            parse_mode=enums.ParseMode.HTML,
+            protect_content=settings.get('file_secure', PROTECT_CONTENT),
+            reply_markup=InlineKeyboardMarkup(btn)
+        )
+    except:
+        return
 
-    k = await msg.reply(
-        f"<b><u>❗️IMPORTANT❗️</u>\n\n"
-        f"ᴛʜɪꜱ ꜰɪʟᴇ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ {get_time(DELETE_TIME)} 🫥\n\n"
-        f"ᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ᴛʜɪꜱ ꜰɪʟᴇ ꜱᴏᴍᴇᴡʜᴇʀᴇ ᴇʟꜱᴇ.</b>",
-        quote=True
+    k = await client.send_message(
+        chat_id=query.from_user.id,
+        text=(
+            f"<b><u>❗️IMPORTANT❗️</u>\n\n"
+            f"ᴛʜɪꜱ ꜰɪʟᴇ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ {get_time(DELETE_TIME)} 🫥\n\n"
+            f"ᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ᴛʜɪꜱ ꜰɪʟᴇ ꜱᴏᴍᴇᴡʜᴇʀᴇ ᴇʟꜱᴇ.</b>"
+        ),
+        parse_mode=enums.ParseMode.HTML
     )
 
     await asyncio.sleep(DELETE_TIME)
 
-    await msg.delete()
+    try:
+        await msg.delete()
+    except:
+        pass
 
-    await k.edit_text(
-        "<b>ʏᴏᴜʀ ꜰɪʟᴇ ɪꜱ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ᴅᴇʟᴇᴛᴇᴅ !!</b>"
-    )
-
+    try:
+        await k.edit_text(
+            "<b>ʏᴏᴜʀ ꜰɪʟᴇ ɪꜱ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ᴅᴇʟᴇᴛᴇᴅ !!</b>",
+            parse_mode=enums.ParseMode.HTML
+        )
+    except:
+        pass   
+    
 @Client.on_message(filters.command("start") & filters.incoming)
 async def start(client, message):
     bot_id = client.me.id
