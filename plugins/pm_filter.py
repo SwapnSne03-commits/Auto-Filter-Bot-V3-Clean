@@ -631,89 +631,90 @@ async def send_multi_files(client, query):
 
     _, key = query.data.split("#")
 
-    if key not in temp.GETALL:
-        return await query.answer(
-            "⚠️ This session expired.\nPlease search again.",
-            show_alert=True
-	    )
-    # session safety
-    if key not in temp.GETALL:
-        return await query.answer(
-            "⚠️ This session expired.\nPlease search again.",
-            show_alert=True
-        )
+    selected = list(temp.MULTI_FILES.get(key, []))
 
-    files = list(temp.MULTI_FILES.get(key, []))
-
-    if not files:
+    if not selected:
         return await query.answer(
             "⚠️ You didn't select any files",
             show_alert=True
         )
 
-    settings = await get_settings(query.message.chat.id)
+    grp_id = key.split("-")[0]
 
-    for fid in files:
+    # send files through pipeline (caption + auto delete preserved)
+    for fid in selected:
 
         try:
-            file_obj = next(
-                (f for f in temp.GETALL.get(key, []) if f.file_id == fid),
-                None
+            await send_file_pipeline(
+                client,
+                query.message,
+                fid,
+                grp_id
             )
 
-            caption = None
+            await asyncio.sleep(0.7)  # flood protection
 
-            if file_obj:
-                try:
-                    caption = await get_cap(
-                        settings,
-                        "0",
-                        [file_obj],
-                        query,
-                        1,
-                        "",
-                        0
-                    )
-                except:
-                    caption = file_obj.caption
-
-            await client.send_cached_media(
-                chat_id=query.from_user.id,
-                file_id=fid,
-                caption=caption
-            )
-
-            # flood protection
-            await asyncio.sleep(0.4)
-
-        except Exception as e:
-            print(e)
+        except Exception:
             pass
 
-    # clear selection memory
+    # reset selection memory
     temp.MULTI_FILES.pop(key, None)
     temp.MULTI_SELECT.pop(key, None)
 
     await query.answer(
-        "✅ Files sent successfully",
+        "✅ Selected files sent",
         show_alert=True
     )
 
-    # restore original result page
+    # ================= RESTORE EXISTING RESULT PAGE =================
+
     all_files = temp.GETALL.get(key, [])
 
+    if not all_files:
+        return
+
+    settings = await get_settings(query.message.chat.id)
     per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
 
     files = all_files[:per_page]
-    offset = per_page if len(all_files) > per_page else ""
 
-    k = (FRESH.get(key), files, offset, len(all_files))
+    btn = [
+        [
+            InlineKeyboardButton(
+                text=f"{silent_size(f.file_size)} ✦ {extract_tag(f.file_name)} {clean_filename(f.file_name)}",
+                callback_data=f"file#{f.file_id}"
+            )
+        ]
+        for f in files
+    ]
 
-    await auto_filter(
-        client,
-        query.message.reply_to_message,
-        k
-	)
+    combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
+
+    # filter buttons
+    btn.insert(0, [
+        InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
+        InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
+        InlineKeyboardButton("ꜱᴇᴀꜱᴏɴ", callback_data=f"seasons#{key}#0")
+    ])
+
+    # combined + select button
+    if combined_files:
+        btn.insert(1, [
+            InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"fc#{key}#0"),
+            InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#0")
+        ])
+    else:
+        btn.insert(1, [
+            InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#0")
+        ])
+
+    # restore same message (NO NEW SEARCH)
+    try:
+        await query.message.edit_reply_markup(
+            reply_markup=InlineKeyboardMarkup(btn)
+        )
+    except:
+        pass
 
 #================= CANCEL =================
 
@@ -722,26 +723,53 @@ async def cancel_multi_select(client, query):
 
     _, key = query.data.split("#")
 
+    # clear selection memory
     temp.MULTI_FILES.pop(key, None)
     temp.MULTI_SELECT.pop(key, None)
 
     await query.answer("Selection cancelled")
 
-    # restore original result
+    # get existing stored files (no new search)
     all_files = temp.GETALL.get(key, [])
 
     settings = await get_settings(query.message.chat.id)
     per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
 
     files = all_files[:per_page]
-    offset = per_page if len(all_files) > per_page else ""
 
-    k = (FRESH.get(key), files, offset, len(all_files))
+    btn = [
+        [
+            InlineKeyboardButton(
+                text=f"{silent_size(f.file_size)} ✦ {extract_tag(f.file_name)} {clean_filename(f.file_name)}",
+                callback_data=f"file#{f.file_id}"
+            )
+        ]
+        for f in files
+    ]
 
-    await auto_filter(
-        client,
-        query.message.reply_to_message,
-        k
+    combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
+
+    # top filter buttons
+    btn.insert(0, [
+        InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
+        InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
+        InlineKeyboardButton("ꜱᴇᴀꜱᴏɴ", callback_data=f"seasons#{key}#0")
+    ])
+
+    # combined + select
+    if combined_files:
+        btn.insert(1, [
+            InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"fc#{key}#0"),
+            InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#0")
+        ])
+    else:
+        btn.insert(1, [
+            InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#0")
+        ])
+
+    # restore same message
+    await query.edit_message_reply_markup(
+        reply_markup=InlineKeyboardMarkup(btn)
 	)
 
 # ================= OLD QUALITY CALLBACK =================
