@@ -654,8 +654,8 @@ async def send_multi_files(client, query):
 
     selected = list(temp.MULTI_FILES.get(key, []))
 
-    # 🔒 selected file validation (important)
-    valid_ids = {f.file_id for f in temp.GETALL.get(key, [])}
+    # fix mismatch bug
+    valid_ids = {str(f.file_id) for f in temp.GETALL.get(key, [])}
     selected = [fid for fid in selected if fid in valid_ids]
 
     if not selected:
@@ -682,8 +682,9 @@ async def send_multi_files(client, query):
     temp.MULTI_FILES.pop(key, None)
     temp.MULTI_SELECT.pop(key, None)
 
-    await query.answer("✅ Selected files sent", show_alert=True)
+    await query.answer("✅ All selected files sent", show_alert=True)
 
+    # restore main result page
     await restore_main_page(client, query, key)
 
 #================= CANCEL =================
