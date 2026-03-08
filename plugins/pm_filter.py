@@ -726,14 +726,9 @@ async def send_multi_files(client, query):
         "current_offset": 0
 	}
     # restore main result page
+    # restore main result page (same as cancel button)
     try:
-        # force remove select UI first
-        await query.message.edit_reply_markup(None)
-        await asyncio.sleep(0.2)
-
-        # load main result page
         await restore_main_page(client, query, key)
-
     except Exception as e:
         print("Restore UI error:", e)
 
@@ -787,13 +782,14 @@ async def restore_main_page(client, query, key):
     if key not in temp.GETALL:
         return
 
+    temp.MULTI_SELECT[key] = False
+
     all_files = temp.GETALL.get(key, [])
 
     settings = await get_settings(query.message.chat.id)
     per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
 
-    offset = int(temp.PAGE_STATE.get(key, {}).get("current_offset", 0))
-
+    offset = int(temp.PAGE_STATE.get(key, {}).get("current_offset", 0) or 0)
     files = all_files[offset: offset + per_page]
     total = len(all_files)
 
