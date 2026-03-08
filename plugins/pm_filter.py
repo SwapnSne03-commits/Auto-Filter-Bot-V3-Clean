@@ -721,14 +721,7 @@ async def send_multi_files(client, query):
         show_alert=True
     )
 
-    temp.MULTI_FILES.pop(key, None)
-    temp.MULTI_SELECT.pop(key, None)
-
-    try:
-        await restore_main_page(client, query, key)
-    except:
-        pass
-
+    
     sent_msgs = []
     delete_time = None
 
@@ -747,6 +740,16 @@ async def send_multi_files(client, query):
 
         await asyncio.sleep(0.25)
 
+    temp.MULTI_FILES.pop(key, None)
+    temp.MULTI_SELECT.pop(key, None)
+
+    await asyncio.sleep(0.4)
+
+    try:
+        await restore_main_page(client, query, key)
+    except:
+        pass
+		
     if sent_msgs and delete_time:
 
         notice = await client.send_message(
