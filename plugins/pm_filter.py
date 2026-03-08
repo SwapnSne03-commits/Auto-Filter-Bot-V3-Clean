@@ -827,10 +827,12 @@ async def restore_main_page(client, query, key):
     if total > offset + per_page:
 
         total_pages = math.ceil(total / per_page)
-
+        
+        next_offset = offset + per_page
+	
         btn.append([
             InlineKeyboardButton("ᴘᴀɢᴇ", callback_data="pages"),
-            InlineKeyboardButton(f"1/{total_pages}", callback_data="pages"),
+            InlineKeyboardButton(f"{(offset // per_page) + 1}/{total_pages}", callback_data="pages"),
             InlineKeyboardButton("ɴᴇxᴛ ⋟", callback_data=f"next_{req}_{key}_{next_offset}")
         ])
 
