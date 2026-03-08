@@ -283,7 +283,7 @@ async def next_page(bot, query):
 
         if active:
             # 🔹 FILTERED PAGINATION MODE
-            all_files = temp.GETALL.get(key, [])
+            all_files = temp.FILTER_FILES.get(key) or temp.GETALL.get(key, [])
 
             if active["type"] == "quality":
                 data = [
@@ -499,7 +499,11 @@ async def next_page(bot, query):
 async def start_multi_select(client, query):
 
     _, key, offset = query.data.split("#")
-    offset = int(offset)
+
+    try:
+        offset = int(offset)
+    except:
+        offset = 0
 
     owner_id = temp.OWNER.get(key)
 
@@ -618,8 +622,12 @@ async def build_multi_page(client, query, key, offset):
 @Client.on_callback_query(filters.regex("^mfile#"))
 async def toggle_multi_file(client, query):
 
-    _, key, fid, offset = query.data.split("#")
-    offset = int(offset)
+    _, key, offset = query.data.split("#")
+
+    try:
+        offset = int(offset)
+    except:
+        offset = 0
 
     owner_id = temp.OWNER.get(key)
 
@@ -694,7 +702,7 @@ async def send_multi_files(client, query):
 
     await query.answer("📤 Sending selected files...", show_alert=False)
 
-    grp_id = key.split("-")[0]
+    grp_id = query.message.chat.id
 
     temp.MULTI_FILES.pop(key, None)
     temp.MULTI_SELECT.pop(key, None)
@@ -3169,6 +3177,9 @@ async def cb_handler(client: Client, query: CallbackQuery):
 			
         
 async def auto_filter(client, msg, spoll=False):
+    chat_id = msg.chat.id
+    settings = await get_settings(chat_id)
+
     cap = ""
     message = msg
 
