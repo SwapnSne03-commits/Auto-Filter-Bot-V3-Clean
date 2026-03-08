@@ -718,25 +718,12 @@ async def send_multi_files(client, query):
 
 
     # clear selection first
+    # exit select mode (same behaviour as cancel button)
     temp.MULTI_FILES.pop(key, None)
     temp.MULTI_SELECT.pop(key, None)
-    temp.FILTER_FILES.pop(key, None)
 
-    temp.PAGE_STATE[key] = {
-        "current_offset": 0
-	}
-    # restore main result page
-    # force remove select UI
-    try:
-        if query.message:
-            await query.message.edit_reply_markup(None)
-            await asyncio.sleep(0.2)
-    except Exception as e:
-        print("Clear UI error:", e)
-    # restore main result page (same as cancel button)
     try:
         await restore_main_page(client, query, key)
-        await asyncio.sleep(0.1)
     except Exception as e:
         print("Restore UI error:", e)
 
