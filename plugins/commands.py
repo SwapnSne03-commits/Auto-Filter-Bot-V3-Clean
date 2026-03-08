@@ -148,8 +148,7 @@ def build_del_files_buttons(session):
 
     return InlineKeyboardMarkup(buttons)
 
-async def send_file_pipeline(client, message, file_id, grp_id):
-
+async def send_file_pipeline(client, query, file_id, grp_id):
     files_ = await get_file_details(file_id)
 
     if not files_:
@@ -199,7 +198,7 @@ async def send_file_pipeline(client, message, file_id, grp_id):
         ]
 
     msg = await client.send_cached_media(
-        chat_id=message.from_user.id,
+        chat_id=query.from_user.id,
         file_id=file_id,
         caption=f_caption,
         protect_content=settings.get('file_secure', PROTECT_CONTENT),
