@@ -831,7 +831,7 @@ async def restore_main_page(client, query, key):
         btn.append([
             InlineKeyboardButton("ᴘᴀɢᴇ", callback_data="pages"),
             InlineKeyboardButton(f"1/{total_pages}", callback_data="pages"),
-            InlineKeyboardButton("ɴᴇxᴛ ⋟", callback_data=f"next_{req}_{key}_{per_page}")
+            InlineKeyboardButton("ɴᴇxᴛ ⋟", callback_data=f"next_{req}_{key}_{next_offset}")
         ])
 
     else:
