@@ -720,7 +720,7 @@ async def restore_main_page(client, query, key):
     if key not in temp.GETALL:
         return
 
-    all_files = temp.GETALL.get(key)
+    all_files = temp.GETALL.get(key, [])
 
     settings = await get_settings(query.message.chat.id)
     per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
@@ -728,7 +728,7 @@ async def restore_main_page(client, query, key):
     files = all_files[:per_page]
     total = len(all_files)
 
-    req = query.from_user.id   # 🔑 requester id
+    req = query.from_user.id
 
     btn = [
         [
@@ -740,7 +740,7 @@ async def restore_main_page(client, query, key):
         for f in files
     ]
 
-    combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
+    combined_files = bool(temp.SMART_FILTERS.get(key, {}).get("combined"))
 
     btn.insert(0, [
         InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
@@ -758,21 +758,30 @@ async def restore_main_page(client, query, key):
             InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#0")
         ])
 
-    # pagination fix
+    # pagination
     if total > per_page:
+
+        total_pages = math.ceil(total / per_page)
+
         btn.append([
             InlineKeyboardButton("ᴘᴀɢᴇ", callback_data="pages"),
-            InlineKeyboardButton(f"1/{math.ceil(total/per_page)}", callback_data="pages"),
+            InlineKeyboardButton(f"1/{total_pages}", callback_data="pages"),
             InlineKeyboardButton("ɴᴇxᴛ ⋟", callback_data=f"next_{req}_{key}_{per_page}")
         ])
+
     else:
+
         btn.append([
-            InlineKeyboardButton("↭ ɴᴏ ᴍᴏʀᴇ ᴘᴀɢᴇꜱ ᴀᴠᴀɪʟᴀʙʟᴇ ↭", callback_data="pages")
+            InlineKeyboardButton(
+                "↭ ɴᴏ ᴍᴏʀᴇ ᴘᴀɢᴇꜱ ᴀᴠᴀɪʟᴀʙʟᴇ ↭",
+                callback_data="pages"
+            )
         ])
 
     await query.edit_message_reply_markup(
         reply_markup=InlineKeyboardMarkup(btn)
 	)
+    
 
 # ================= OLD QUALITY CALLBACK =================
 async def old_qualities_cb(client: Client, query: CallbackQuery):
@@ -1059,6 +1068,17 @@ async def filter_qualities_cb_handler(client: Client, query: CallbackQuery):
                 InlineKeyboardButton(
                     "ᴄᴏᴍʙɪɴᴇᴅ",
                     callback_data=f"fc#{key}#0"
+                ),
+                InlineKeyboardButton(
+                    "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
+                    callback_data=f"ms#{key}#0"
+                )
+            ])
+        else:
+            btn.insert(1, [
+                InlineKeyboardButton(
+                    "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
+                    callback_data=f"ms#{key}#0"
                 )
             ])
         # 🔽 Pagination (old mode OR restored homepage)
@@ -1424,6 +1444,17 @@ async def filter_language_cb_handler(client: Client, query: CallbackQuery):
                 InlineKeyboardButton(
                     "ᴄᴏᴍʙɪɴᴇᴅ",
                     callback_data=f"fc#{key}#0"
+                ),
+                InlineKeyboardButton(
+                    "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
+                    callback_data=f"ms#{key}#0"
+                )
+            ])
+        else:
+            btn.insert(1, [
+                InlineKeyboardButton(
+                    "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
+                    callback_data=f"ms#{key}#0"
                 )
             ])
         # 🔽 Pagination (ONLY old mode OR restored homepage)
@@ -1782,9 +1813,20 @@ async def filter_season_cb_handler(client: Client, query: CallbackQuery):
                 InlineKeyboardButton(
                     "ᴄᴏᴍʙɪɴᴇᴅ",
                     callback_data=f"fc#{key}#0"
+                ),
+                InlineKeyboardButton(
+                    "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
+                    callback_data=f"ms#{key}#0"
                 )
             ])
-        # 🔽 Pagination handling (ONLY old mode)
+        else:
+            btn.insert(1, [
+                InlineKeyboardButton(
+                    "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
+                    callback_data=f"ms#{key}#0"
+                )
+            ])
+
         # 🔽 Pagination
         if n_offset != "":
             try:
