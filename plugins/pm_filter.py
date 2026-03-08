@@ -684,11 +684,11 @@ async def send_multi_files(client, query):
         try:
             await send_file_pipeline(
                 client,
-                query.message,   # IMPORTANT FIX
+                query,   # IMPORTANT FIX
                 str(fid),
                 grp_id
             )
-            await asyncio.sleep(0.35)
+            await asyncio.sleep(0.25)
         except Exception as e:
             print("Send error:", e)
 
