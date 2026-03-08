@@ -183,7 +183,7 @@ async def send_file_pipeline(client, query, file_id, grp_id):
 
     f_caption = files.caption
 
-    settings = await get_settings(int(grp_id))
+    settings = await get_settings(int(grp_id) if str(grp_id).isdigit() else grp_id)
     DELETE_TIME = settings.get("auto_del_time", AUTO_DELETE_TIME)
     SILENTX_CAPTION = settings.get('caption', CUSTOM_FILE_CAPTION)
 
