@@ -241,6 +241,42 @@ async def start(client, message):
         await message.reply_text(f"ɪ ᴀᴍ ᴄᴜʀʀᴇɴᴛʟʏ ᴜɴᴅᴇʀ ᴍᴀɪɴᴛᴇɴᴀɴᴄᴇ 🛠️. ɪ ᴡɪʟʟ ʙᴇ ʙᴀᴄᴋ ꜱᴏᴏɴ 🔜", disable_web_page_preview=True)
         return
     m = message
+    # MULTI FILE AUTO DELIVERY
+    if len(message.command) == 2 and message.command[1] == "multifile":
+
+        from plugins.commands import send_file_pipeline
+
+        user_id = message.from_user.id
+
+        data = temp.PENDING_MULTI.get(user_id)
+
+        if not data:
+            return await message.reply_text(
+                "⚠️ Your request expired. Please select files again."
+            )
+
+        files = data["files"]
+        grp_id = data["grp_id"]
+
+        await message.reply_text(
+            "📦 Preparing your selected files..."
+        )
+
+        for fid in files:
+            try:
+                await send_file_pipeline(
+                    client,
+                    message,
+                    str(fid),
+                    grp_id
+                )
+                await asyncio.sleep(0.4)
+            except:
+                pass
+
+        temp.PENDING_MULTI.pop(user_id, None)
+
+        return
     if len(m.command) == 2 and m.command[1].startswith(('notcopy', 'sendall')):
         _, userid, verify_id, file_id = m.command[1].split("_", 3)
         user_id = int(userid)
