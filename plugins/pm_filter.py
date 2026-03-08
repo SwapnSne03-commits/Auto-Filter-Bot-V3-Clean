@@ -359,11 +359,11 @@ async def next_page(bot, query):
             if combined_files:
                 btn.insert(1, [
                     InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"fc#{key}#0"),
-                    InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#0")
+                    InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#{offset}")
                 ])
             else:
                 btn.insert(1, [
-                    InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#0")
+                    InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#{offset}")
                 ])       
         else:
             combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
@@ -382,11 +382,11 @@ async def next_page(bot, query):
             if combined_files:
                 btn.insert(1, [
                     InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"fc#{key}#0"),
-                    InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#0")
+                    InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#{offset}")
                 ])
             else:
                 btn.insert(1, [
-                    InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#0")
+                    InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#{offset}")
                 ])
             
         try:
@@ -597,9 +597,12 @@ async def build_multi_page(client, query, key, offset):
     if nav:  # prevent empty row
         btn.append(nav)
 
-    await query.edit_message_reply_markup(
-        reply_markup=InlineKeyboardMarkup(btn)
-	)
+    try:
+        await query.edit_message_reply_markup(
+            reply_markup=InlineKeyboardMarkup(btn)
+        )
+    except Exception:
+        pass
     
 
 
@@ -727,8 +730,11 @@ async def restore_main_page(client, query, key):
     settings = await get_settings(query.message.chat.id)
     per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
 
-    files = all_files[:per_page]
+    offset = int(temp.PAGE_STATE.get(key, {}).get("current_offset", 0))
+
+    files = all_files[offset: offset + per_page]
     total = len(all_files)
+
 
     req = query.from_user.id
 
@@ -749,15 +755,14 @@ async def restore_main_page(client, query, key):
         InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
         InlineKeyboardButton("ꜱᴇᴀꜱᴏɴ", callback_data=f"seasons#{key}#0")
     ])
-
     if combined_files:
         btn.insert(1, [
             InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"fc#{key}#0"),
-            InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#0")
+            InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#{offset}")
         ])
     else:
         btn.insert(1, [
-            InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#0")
+            InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#{offset}")
         ])
 
     # pagination
@@ -970,7 +975,7 @@ async def filter_qualities_cb_handler(client: Client, query: CallbackQuery):
 # ============================================================
         # ================= SMART MODE =================
         if SMART_SELECTION_MODE:
-            offset = 0   # ⬅️ IMPORTANT
+            #offset = 0   # ⬅️ IMPORTANT
             all_files = temp.GETALL.get(key, [])
 
             # 🔁 BACK TO MAIN FILE LIST
@@ -1075,14 +1080,14 @@ async def filter_qualities_cb_handler(client: Client, query: CallbackQuery):
                 ),
                 InlineKeyboardButton(
                     "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
-                    callback_data=f"ms#{key}#0"
+                    callback_data=f"ms#{key}#{offset}"
                 )
             ])
         else:
             btn.insert(1, [
                 InlineKeyboardButton(
                     "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
-                    callback_data=f"ms#{key}#0"
+                    callback_data=f"ms#{key}#{offset}"
                 )
             ])
         # 🔽 Pagination (old mode OR restored homepage)
@@ -1340,7 +1345,7 @@ async def filter_language_cb_handler(client: Client, query: CallbackQuery):
 
         # ================= SMART MODE =================
         if SMART_SELECTION_MODE:
-            offset = 0   # ⬅️ IMPORTANT
+            #offset = 0   # ⬅️ IMPORTANT
             all_files = temp.GETALL.get(key, [])
 
             # 🔁 BACK TO MAIN FILE LIST
@@ -1454,14 +1459,14 @@ async def filter_language_cb_handler(client: Client, query: CallbackQuery):
                 ),
                 InlineKeyboardButton(
                     "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
-                    callback_data=f"ms#{key}#0"
+                    callback_data=f"ms#{key}#{offset}"
                 )
             ])
         else:
             btn.insert(1, [
                 InlineKeyboardButton(
                     "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
-                    callback_data=f"ms#{key}#0"
+                    callback_data=f"ms#{key}#{offset}"
                 )
             ])
         # 🔽 Pagination (ONLY old mode OR restored homepage)
@@ -1724,7 +1729,7 @@ async def filter_season_cb_handler(client: Client, query: CallbackQuery):
 
         # ================= SMART MODE =================
         if SMART_SELECTION_MODE:
-            offset = 0   # ⬅️ IMPORTANT
+            #offset = 0   # ⬅️ IMPORTANT
             all_files = temp.GETALL.get(key, [])
             settings = await get_settings(chat_id)
             # 🔁 BACK TO MAIN FILE LIST
@@ -1826,14 +1831,14 @@ async def filter_season_cb_handler(client: Client, query: CallbackQuery):
                 ),
                 InlineKeyboardButton(
                     "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
-                    callback_data=f"ms#{key}#0"
+                    callback_data=f"ms#{key}#{offset}"
                 )
             ])
         else:
             btn.insert(1, [
                 InlineKeyboardButton(
                     "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
-                    callback_data=f"ms#{key}#0"
+                    callback_data=f"ms#{key}#{offset}"
                 )
             ])
 
@@ -3617,14 +3622,14 @@ async def auto_filter(client, msg, spoll=False):
                 ),
                 InlineKeyboardButton(
                     "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
-                    callback_data=f"ms#{key}#0"
+                    callback_data=f"ms#{key}#{offset}"
                 )
             ])
         else:
             btn.insert(1, [
                 InlineKeyboardButton(
                     "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
-                    callback_data=f"ms#{key}#0"
+                    callback_data=f"ms#{key}#{offset}"
                 )
             ])
 
@@ -3661,14 +3666,14 @@ async def auto_filter(client, msg, spoll=False):
                 ),
                 InlineKeyboardButton(
                     "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
-                    callback_data=f"ms#{key}#0"
+                    callback_data=f"ms#{key}#{offset}"
 				)
             ])
         else:
             btn.insert(1, [
                 InlineKeyboardButton(
                     "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
-                    callback_data=f"ms#{key}#0"
+                    callback_data=f"ms#{key}#{offset}"
                 )
             ])
 
