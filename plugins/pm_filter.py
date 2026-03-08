@@ -257,6 +257,11 @@ async def refercall(bot, query):
 async def next_page(bot, query):
     try:
         ident, req, key, offset = query.data.split("_")
+        # MULTI SELECT MODE
+        if temp.MULTI_SELECT.get(key):
+            offset = int(offset)
+            await build_multi_page(bot, query, key, offset)
+            return
         curr_time = datetime.now(pytz.timezone('Asia/Kolkata')).time()
         if int(req) not in [query.from_user.id, 0]:
             return await query.answer(script.ALRT_TXT.format(query.from_user.first_name), show_alert=True)
@@ -353,9 +358,13 @@ async def next_page(bot, query):
 
             if combined_files:
                 btn.insert(1, [
-                    InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"fc#{key}#0")
+                    InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"fc#{key}#0"),
+                    InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#0")
                 ])
-            
+            else:
+                btn.insert(1, [
+                    InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#0")
+                ])       
         else:
             combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
             has_seasons = temp.SMART_FILTERS.get(key, {}).get("seasons")
@@ -372,7 +381,12 @@ async def next_page(bot, query):
 
             if combined_files:
                 btn.insert(1, [
-                    InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"fc#{key}#0")
+                    InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"fc#{key}#0"),
+                    InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#0")
+                ])
+            else:
+                btn.insert(1, [
+                    InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#0")
                 ])
             
         try:
@@ -478,6 +492,191 @@ async def next_page(bot, query):
         await query.answer()
     except Exception as e:
         LOGGER.error(f"Error In Next Funtion - {e}")
+
+# ================= MULTI SELECT SYSTEM =================
+
+@Client.on_callback_query(filters.regex("^ms#"))
+async def start_multi_select(client, query):
+
+    _, key, offset = query.data.split("#")
+    offset = int(offset)
+
+    temp.MULTI_SELECT[key] = True
+    temp.MULTI_FILES.setdefault(key, set())
+
+    await build_multi_page(client, query, key, offset)
+
+
+async def build_multi_page(client, query, key, offset):
+
+    settings = await get_settings(query.message.chat.id)
+    per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
+
+    all_files = temp.GETALL.get(key, [])
+    total = len(all_files)
+
+    files = all_files[offset: offset + per_page]
+
+    if total > offset + per_page:
+        n_offset = offset + per_page
+    else:
+        n_offset = None
+
+    selected = temp.MULTI_FILES.get(key, set())
+    count = len(selected)
+
+    btn = []
+
+    # SEND + CANCEL
+    btn.append([
+        InlineKeyboardButton(
+            f"ꜱᴇɴᴅ ({count})",
+            callback_data=f"msend#{key}"
+        ),
+        InlineKeyboardButton(
+            "ᴄᴀɴᴄᴇʟ",
+            callback_data=f"mcancel#{key}"
+        )
+    ])
+
+    # FILE LIST
+    for f in files:
+
+        mark = "☑" if f.file_id in selected else "☐"
+
+        btn.append([
+            InlineKeyboardButton(
+                text=f"{mark} {silent_size(f.file_size)} ✦ {clean_filename(f.file_name)}",
+                callback_data=f"mfile#{key}#{f.file_id}#{offset}"
+            )
+        ])
+
+    # PAGINATION
+    page = (offset // per_page) + 1
+    pages = math.ceil(total / per_page)
+
+    nav = []
+
+    if offset > 0:
+        nav.append(
+            InlineKeyboardButton(
+                "≪ ʙᴀᴄᴋ",
+                callback_data=f"ms#{key}#{offset-per_page}"
+            )
+        )
+
+    nav.append(
+        InlineKeyboardButton(
+            f"{page}/{pages}",
+            callback_data="pages"
+        )
+    )
+
+    if n_offset is not None:
+        nav.append(
+            InlineKeyboardButton(
+                "ɴᴇxᴛ ≫",
+                callback_data=f"ms#{key}#{n_offset}"
+            )
+        )
+
+    btn.append(nav)
+
+    await query.edit_message_reply_markup(
+        reply_markup=InlineKeyboardMarkup(btn)
+    )
+
+
+# ================= SELECT / UNSELECT =================
+
+@Client.on_callback_query(filters.regex("^mfile#"))
+async def toggle_multi_file(client, query):
+
+    _, key, fid, offset = query.data.split("#")
+    offset = int(offset)
+
+    selected = temp.MULTI_FILES.setdefault(key, set())
+
+    # LIMIT (optional safety)
+    if len(selected) >= 15 and fid not in selected:
+        return await query.answer(
+            "⚠️ Maximum 15 files allowed",
+            show_alert=True
+        )
+
+    if fid in selected:
+        selected.remove(fid)
+    else:
+        selected.add(fid)
+
+    await build_multi_page(client, query, key, offset)
+
+
+# ================= SEND FILES =================
+
+@Client.on_callback_query(filters.regex("^msend#"))
+async def send_multi_files(client, query):
+
+    _, key = query.data.split("#")
+
+    files = list(temp.MULTI_FILES.get(key, []))
+
+    if not files:
+        return await query.answer(
+            "⚠️ You didn't select any files",
+            show_alert=True
+        )
+
+    for fid in files:
+
+        try:
+            await client.send_cached_media(
+                chat_id=query.from_user.id,
+                file_id=fid
+            )
+        except:
+            pass
+
+    # RESET selection after sending
+    temp.MULTI_FILES.pop(key, None)
+    temp.MULTI_SELECT.pop(key, None)
+
+    await query.answer(
+        "✅ Files sent successfully",
+        show_alert=True
+    )
+
+
+# ================= CANCEL =================
+
+@Client.on_callback_query(filters.regex("^mcancel#"))
+async def cancel_multi_select(client, query):
+
+    _, key = query.data.split("#")
+
+    # reset memory
+    temp.MULTI_FILES.pop(key, None)
+    temp.MULTI_SELECT.pop(key, None)
+
+    await query.answer("Selection cancelled")
+
+    # restore main result page
+    search = FRESH.get(key)
+
+    files, offset, total = await get_search_results(
+        query.message.chat.id,
+        search,
+        offset=0,
+        filter=True
+    )
+
+    k = (search, files, offset, total)
+
+    await auto_filter(
+        client,
+        query.message.reply_to_message,
+        k
+)
 
 # ================= OLD QUALITY CALLBACK =================
 async def old_qualities_cb(client: Client, query: CallbackQuery):
