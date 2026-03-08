@@ -673,7 +673,7 @@ async def toggle_multi_file(client, query):
 @Client.on_callback_query(filters.regex("^msend#"))
 async def send_multi_files(client, query):
 
-    from plugins.commands import send_file_pipeline, auto_delete_messages
+    from plugins.commands import send_file_pipeline
 
     _, key = query.data.split("#")
 
@@ -716,52 +716,40 @@ async def send_multi_files(client, query):
             url=f"https://t.me/{temp.U_NAME}?start=multifile"
         )
 
+    # popup alert
     await query.answer(
         "✅ sᴇʟᴇᴄᴛᴇᴅ ғɪʟᴇs ᴀʀᴇ sᴜᴄᴄᴇssғᴜʟʟʏ sᴇɴᴛ ᴛᴏ ʏᴏᴜʀ ᴘᴍ.\n\nɢᴏ ʙᴀᴄᴋ & ᴄʜᴇᴄᴋ ʙᴏᴛ ᴍᴀssᴀɢᴇ !",
         show_alert=True
     )
 
-    
-    sent_msgs = []
-    delete_time = None
-
-    for fid in selected:
-
-        result = await send_file_pipeline(
-            client,
-            query,
-            str(fid),
-            grp_id
-        )
-
-        if result:
-            msg, delete_time = result
-            sent_msgs.append(msg)
-
-        await asyncio.sleep(0.25)
-
+    # clear selection first
     temp.MULTI_FILES.pop(key, None)
     temp.MULTI_SELECT.pop(key, None)
 
-    await asyncio.sleep(0.4)
-
+    # restore main result page
     try:
         await restore_main_page(client, query, key)
     except:
         pass
-		
-    if sent_msgs and delete_time:
 
-        notice = await client.send_message(
-            query.from_user.id,
-            f"<b>❗️IMPORTANT\n\nᴛʜᴇsᴇ ғɪʟᴇs ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ {get_time(delete_time)}.\n"
-            f"ᴘʟᴇᴀsᴇ ғᴏʀᴡᴀʀᴅ ᴛʜᴇsᴇ ғɪʟᴇs ᴛᴏ ʏᴏᴜʀ sᴀᴠᴇᴅ ᴍᴀssᴀɢᴇ.</b>",
-            parse_mode=enums.ParseMode.HTML
-        )
+    await asyncio.sleep(0.3)
 
-        asyncio.create_task(
-            auto_delete_messages(client, sent_msgs, notice, delete_time)
-		)
+    # send files
+    for fid in selected:
+
+        try:
+            await send_file_pipeline(
+                client,
+                query,
+                str(fid),
+                grp_id
+            )
+
+            await asyncio.sleep(0.25)
+
+        except Exception as e:
+            print("Multi send error:", e)
+
 
 #================= CANCEL =================
 
