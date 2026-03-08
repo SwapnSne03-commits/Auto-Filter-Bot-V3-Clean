@@ -699,7 +699,10 @@ async def send_multi_files(client, query):
             show_alert=True
         )
 
-    await query.answer("📤 Sending selected files...", show_alert=False)
+    await query.answer(
+        "✅ sᴇʟᴇᴄᴛᴇᴅ ғɪʟᴇs ᴀʀᴇ sᴜᴄᴄᴇssғᴜʟʟʏ sᴇɴᴛ ᴛᴏ ʏᴏᴜʀ ᴘᴍ.\n\nɢᴏ ʙᴀᴄᴋ & ᴄʜᴇᴄᴋ ʙᴏᴛ ᴍᴀssᴀɢᴇ !",
+        show_alert=True
+	    )
 
     grp_id = query.message.chat.id
 
@@ -727,7 +730,7 @@ async def send_multi_files(client, query):
 
         notice = await client.send_message(
             query.from_user.id,
-            f"<b>❗️IMPORTANT\n\nᴛʜᴇsᴇ ғɪʟᴇs ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ {get_time(delete_time)}\nᴘʟᴇᴀsᴇ ғᴏʀᴡᴀʀᴅ ᴛʜᴇsᴇ ғɪʟᴇs ᴛᴏ ʏᴏᴜʀ sᴀᴠᴇᴅ ᴍᴀssᴀɢᴇ ᴀɴᴅ ᴅᴏᴡɴʟᴏᴀᴅ ᴛʜᴇʀᴇ!!</b>",
+            f"<b>❗️IMPORTANT\n\nᴛʜᴇsᴇ ғɪʟᴇs ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ {get_time(delete_time)}.\nᴘʟᴇᴀsᴇ ғᴏʀᴡᴀʀᴅ ᴛʜᴇsᴇ ғɪʟᴇs ᴛᴏ ʏᴏᴜʀ sᴀᴠᴇᴅ ᴍᴀssᴀɢᴇ ᴀɴᴅ sᴛᴀʀᴛ ᴅᴏᴡɴʟᴏᴀᴅ ᴛʜᴇʀᴇ!!</b>",
             parse_mode=enums.ParseMode.HTML
         )
 
