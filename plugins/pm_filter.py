@@ -827,7 +827,7 @@ async def restore_main_page(client, query, key):
         ])
 
     # pagination
-    if total > per_page:
+    if total > offset + per_page:
 
         total_pages = math.ceil(total / per_page)
 
@@ -846,7 +846,7 @@ async def restore_main_page(client, query, key):
             )
         ])
 
-    await query.edit_message_reply_markup(
+    await query.message.edit_reply_markup(
         reply_markup=InlineKeyboardMarkup(btn)
 	)
     
