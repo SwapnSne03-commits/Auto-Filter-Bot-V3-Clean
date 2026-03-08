@@ -148,6 +148,79 @@ def build_del_files_buttons(session):
 
     return InlineKeyboardMarkup(buttons)
 
+async def send_file_pipeline(client, message, file_id, grp_id):
+
+    files_ = await get_file_details(file_id)
+
+    if not files_:
+        return
+
+    files = files_[0]
+
+    title = clean_special_words(clean_filename(files.file_name))
+    size = get_size(files.file_size)
+
+    f_caption = files.caption
+
+    settings = await get_settings(int(grp_id))
+
+    DELETE_TIME = settings.get("auto_del_time", AUTO_DELETE_TIME)
+    SILENTX_CAPTION = settings.get('caption', CUSTOM_FILE_CAPTION)
+
+    if SILENTX_CAPTION:
+        try:
+            original_caption = files.caption
+            fallback_caption = original_caption if original_caption else title
+
+            f_caption = SILENTX_CAPTION.format(
+                file_name=title or "",
+                file_size=size or "",
+                file_caption=fallback_caption
+            )
+
+            f_caption = clean_special_words(f_caption)
+
+        except Exception:
+            pass
+
+    if f_caption is None:
+        f_caption = clean_special_words(clean_filename(files.file_name))
+
+    if STREAM_MODE:
+        btn = [
+            [InlineKeyboardButton('𝖦𝖾𝗇𝖾𝗋𝖺𝗍𝖾 𝖲𝗍𝗋𝖾𝖺𝗆𝗂𝗇𝗀 𝖫𝗂𝗇𝗄', callback_data=f'streamfile:{file_id}')],
+            [InlineKeyboardButton('𝖴𝗉𝖽𝖺𝗍𝖾 𝖢𝗁𝖺𝗇𝗇𝖾𝗅', url=UPDATE_CHANNEL_LNK)],
+            [InlineKeyboardButton("📊 𝗩𝗶𝗲𝘄 𝗔𝘂𝗱𝗶𝗼/𝗦𝘂𝗯𝘁𝗶𝘁𝗹𝗲 𝗜𝗻𝗳𝗼", callback_data="trackinfo")]
+        ]
+    else:
+        btn = [
+            [InlineKeyboardButton('📌 ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ', url=UPDATE_CHANNEL_LNK)],
+            [InlineKeyboardButton("📑 ᴠɪᴇᴡ ᴀᴜᴅɪᴏ/sᴜʙᴛɪᴛʟᴇ ᴅᴇᴛᴀɪʟs", callback_data="trackinfo")]
+        ]
+
+    msg = await client.send_cached_media(
+        chat_id=message.from_user.id,
+        file_id=file_id,
+        caption=f_caption,
+        protect_content=settings.get('file_secure', PROTECT_CONTENT),
+        reply_markup=InlineKeyboardMarkup(btn)
+    )
+
+    k = await msg.reply(
+        f"<b><u>❗️IMPORTANT❗️</u>\n\n"
+        f"ᴛʜɪꜱ ꜰɪʟᴇ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ {get_time(DELETE_TIME)} 🫥\n\n"
+        f"ᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ᴛʜɪꜱ ꜰɪʟᴇ ꜱᴏᴍᴇᴡʜᴇʀᴇ ᴇʟꜱᴇ.</b>",
+        quote=True
+    )
+
+    await asyncio.sleep(DELETE_TIME)
+
+    await msg.delete()
+
+    await k.edit_text(
+        "<b>ʏᴏᴜʀ ꜰɪʟᴇ ɪꜱ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ᴅᴇʟᴇᴛᴇᴅ !!</b>"
+    )
+
 @Client.on_message(filters.command("start") & filters.incoming)
 async def start(client, message):
     bot_id = client.me.id
