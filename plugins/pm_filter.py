@@ -501,6 +501,13 @@ async def start_multi_select(client, query):
     _, key, offset = query.data.split("#")
     offset = int(offset)
 
+    owner_id = temp.OWNER.get(key)
+
+    if not owner_id or query.from_user.id != owner_id:
+        return await query.answer(
+            "🚫 ɴᴏᴛ ʏᴏᴜʀ ʀᴇǫᴜᴇsᴛ ʙᴜᴅᴅʏ !!",
+            show_alert=True
+	    )
     if key not in temp.GETALL:
         return await query.answer(
             "⚠️ This session expired.\nPlease search again.",
@@ -614,6 +621,14 @@ async def toggle_multi_file(client, query):
     _, key, fid, offset = query.data.split("#")
     offset = int(offset)
 
+    owner_id = temp.OWNER.get(key)
+
+    if not owner_id or query.from_user.id != owner_id:
+        return await query.answer(
+            "🚫 ɴᴏᴛ ʏᴏᴜʀ ʀᴇǫᴜᴇsᴛ ʙᴜᴅᴅʏ !!",
+            show_alert=True
+		)
+
     fid = str(fid)  # 🔒 prevent type mismatch
 
     if key not in temp.GETALL:
@@ -655,6 +670,14 @@ async def send_multi_files(client, query):
 
     _, key = query.data.split("#")
 
+    owner_id = temp.OWNER.get(key)
+
+    if not owner_id or query.from_user.id != owner_id:
+        return await query.answer(
+            "🚫 ɴᴏᴛ ʏᴏᴜʀ ʀᴇǫᴜᴇsᴛ ʙᴜᴅᴅʏ !!",
+            show_alert=True
+		)
+
     if key not in temp.GETALL:
         return await query.answer(
             "⚠️ Session expired. Please search again.",
@@ -665,7 +688,7 @@ async def send_multi_files(client, query):
 
     if not selected:
         return await query.answer(
-            "⚠️ You didn't select any files",
+            "⚠️ ʏᴏᴜ ᴅɪᴅɴ'ᴛ sᴇʟᴇᴄᴛ ᴀɴʏ ғɪʟᴇs",
             show_alert=True
         )
 
@@ -697,7 +720,7 @@ async def send_multi_files(client, query):
 
         notice = await client.send_message(
             query.from_user.id,
-            f"<b>❗️IMPORTANT\n\nThese files will be deleted in {get_time(delete_time)}</b>",
+            f"<b>❗️IMPORTANT\n\nᴛʜᴇsᴇ ғɪʟᴇs ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ {get_time(delete_time)}\nᴘʟᴇᴀsᴇ ғᴏʀᴡᴀʀᴅ ᴛʜᴇsᴇ ғɪʟᴇs ᴛᴏ ʏᴏᴜʀ sᴀᴠᴇᴅ ᴍᴀssᴀɢᴇ ᴀɴᴅ ᴅᴏᴡɴʟᴏᴀᴅ ᴛʜᴇʀᴇ!!</b>",
             parse_mode=enums.ParseMode.HTML
         )
 
@@ -712,10 +735,18 @@ async def cancel_multi_select(client, query):
 
     _, key = query.data.split("#")
 
+    owner_id = temp.OWNER.get(key)
+
+    if not owner_id or query.from_user.id != owner_id:
+        return await query.answer(
+            "🚫 ɴᴏᴛ ʏᴏᴜʀ ʀᴇǫᴜᴇsᴛ ʙᴜᴅᴅʏ !!",
+            show_alert=True
+		)
+
     temp.MULTI_FILES.pop(key, None)
     temp.MULTI_SELECT.pop(key, None)
 
-    await query.answer("Selection cancelled")
+    await query.answer("sᴇʟᴇᴄᴛɪᴏɴ ᴄᴀɴᴄᴇʟᴇᴅ..")
 
     await restore_main_page(client, query, key)
 
