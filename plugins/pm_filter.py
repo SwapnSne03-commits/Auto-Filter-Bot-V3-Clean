@@ -701,7 +701,11 @@ async def send_multi_files(client, query):
             "⚠️ ʏᴏᴜ ᴅɪᴅɴ'ᴛ sᴇʟᴇᴄᴛ ᴀɴʏ ғɪʟᴇs",
             show_alert=True
         )
-
+    # schedule UI reset (same as cancel button)
+    if query.message:
+        asyncio.create_task(
+            auto_cancel_multi(client, query.message.chat.id, query.message.id, key)
+	    )
     # check if user started bot
     try:
         await client.send_chat_action(user_id, "typing")
@@ -716,16 +720,9 @@ async def send_multi_files(client, query):
             url=f"https://t.me/{temp.U_NAME}?start=multifile"
         )
 
-
-    # clear selection first
     # exit select mode (same behaviour as cancel button)
     temp.MULTI_FILES.pop(key, None)
     temp.MULTI_SELECT.pop(key, None)
-
-    try:
-        await restore_main_page(client, query, key)
-    except Exception as e:
-        print("Restore UI error:", e)
 
     # send files
     for fid in selected:
@@ -743,6 +740,82 @@ async def send_multi_files(client, query):
         except Exception as e:
             print("Multi send error:", e)
 
+async def auto_cancel_multi(client, chat_id, msg_id, key):
+
+    # small delay so send process can start
+    await asyncio.sleep(1)
+
+    try:
+
+        # clear selection memory
+        temp.MULTI_FILES.pop(key, None)
+        temp.MULTI_SELECT.pop(key, None)
+
+        # check session still exists
+        if key not in temp.GETALL:
+            return
+
+        all_files = temp.GETALL.get(key, [])
+
+        settings = await get_settings(chat_id)
+        per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
+
+        files = all_files[:per_page]
+        total = len(all_files)
+
+        req = int(key.split("-")[0])
+
+        btn = [
+            [
+                InlineKeyboardButton(
+                    text=f"{silent_size(f.file_size)} ✦ {extract_tag(f.file_name)} {clean_filename(f.file_name)}",
+                    callback_data=f"file#{f.file_id}"
+                )
+            ]
+            for f in files
+        ]
+
+        # top filter row
+        btn.insert(0, [
+            InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
+            InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
+            InlineKeyboardButton("ꜱᴇᴀꜱᴏɴ", callback_data=f"seasons#{key}#0")
+        ])
+
+        btn.insert(1, [
+            InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#0")
+        ])
+
+        if total > per_page:
+
+            total_pages = math.ceil(total / per_page)
+
+            btn.append([
+                InlineKeyboardButton("ᴘᴀɢᴇ", callback_data="pages"),
+                InlineKeyboardButton(f"1/{total_pages}", callback_data="pages"),
+                InlineKeyboardButton(
+                    "ɴᴇxᴛ ⋟",
+                    callback_data=f"next_{req}_{key}_{per_page}"
+                )
+            ])
+
+        else:
+
+            btn.append([
+                InlineKeyboardButton(
+                    "↭ ɴᴏ ᴍᴏʀᴇ ᴘᴀɢᴇꜱ ᴀᴠᴀɪʟᴀʙʟᴇ ↭",
+                    callback_data="pages"
+                )
+            ])
+
+        await client.edit_message_reply_markup(
+            chat_id,
+            msg_id,
+            reply_markup=InlineKeyboardMarkup(btn)
+        )
+
+    except Exception as e:
+        print("Auto cancel error:", e)
 
 #================= CANCEL =================
 
