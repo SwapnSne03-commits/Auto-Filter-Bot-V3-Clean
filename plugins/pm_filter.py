@@ -704,8 +704,8 @@ async def send_multi_files(client, query):
     # schedule UI reset (same as cancel button)
     if query.message:
         asyncio.create_task(
-            auto_cancel_multi(client, query.message.chat.id, query.message.id, key)
-	    )
+            auto_cancel_multi(client, query, key)
+		)
     # check if user started bot
     try:
         await client.send_chat_action(user_id, "typing")
@@ -724,6 +724,8 @@ async def send_multi_files(client, query):
     temp.MULTI_FILES.pop(key, None)
     temp.MULTI_SELECT.pop(key, None)
 
+    sent_msgs = []
+    delete_time = None
     # send files
     for fid in selected:
 
@@ -734,15 +736,29 @@ async def send_multi_files(client, query):
                 str(fid),
                 grp_id
             )
-
+            if result:
+                msg, delete_time = result
+                sent_msgs.append(msg)
             await asyncio.sleep(0.25)
 
+        if sent_msgs and delete_time:
+
+            warn = await client.send_message(
+                user_id,
+                f"<b>❗️❗️ IMPORTANT ❗️❗️\n\n"
+                f"ᴛʜᴇsᴇ ꜰɪʟᴇs ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ {get_time(delete_time)}.\n"
+                f"ᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ᴛʜᴇᴍ ᴛᴏ sᴀᴠᴇᴅ ᴍᴇssᴀɢᴇs.</b>",
+                parse_mode=enums.ParseMode.HTML
+            )
+
+            asyncio.create_task(
+                auto_delete_messages(client, sent_msgs, warn, delete_time)
+	        )
         except Exception as e:
             print("Multi send error:", e)
 
-async def auto_cancel_multi(client, chat_id, msg_id, key):
+async def auto_cancel_multi(client, query, key):
 
-    # small delay so send process can start
     await asyncio.sleep(1)
 
     try:
@@ -751,72 +767,17 @@ async def auto_cancel_multi(client, chat_id, msg_id, key):
         temp.MULTI_FILES.pop(key, None)
         temp.MULTI_SELECT.pop(key, None)
 
-        # check session still exists
+        # session expired check
         if key not in temp.GETALL:
             return
 
-        all_files = temp.GETALL.get(key, [])
-
-        settings = await get_settings(chat_id)
-        per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
-
-        files = all_files[:per_page]
-        total = len(all_files)
-
-        req = int(key.split("-")[0])
-
-        btn = [
-            [
-                InlineKeyboardButton(
-                    text=f"{silent_size(f.file_size)} ✦ {extract_tag(f.file_name)} {clean_filename(f.file_name)}",
-                    callback_data=f"file#{f.file_id}"
-                )
-            ]
-            for f in files
-        ]
-
-        # top filter row
-        btn.insert(0, [
-            InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
-            InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
-            InlineKeyboardButton("ꜱᴇᴀꜱᴏɴ", callback_data=f"seasons#{key}#0")
-        ])
-
-        btn.insert(1, [
-            InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#0")
-        ])
-
-        if total > per_page:
-
-            total_pages = math.ceil(total / per_page)
-
-            btn.append([
-                InlineKeyboardButton("ᴘᴀɢᴇ", callback_data="pages"),
-                InlineKeyboardButton(f"1/{total_pages}", callback_data="pages"),
-                InlineKeyboardButton(
-                    "ɴᴇxᴛ ⋟",
-                    callback_data=f"next_{req}_{key}_{per_page}"
-                )
-            ])
-
-        else:
-
-            btn.append([
-                InlineKeyboardButton(
-                    "↭ ɴᴏ ᴍᴏʀᴇ ᴘᴀɢᴇꜱ ᴀᴠᴀɪʟᴀʙʟᴇ ↭",
-                    callback_data="pages"
-                )
-            ])
-
-        await client.edit_message_reply_markup(
-            chat_id,
-            msg_id,
-            reply_markup=InlineKeyboardMarkup(btn)
-        )
+        # reuse existing main page builder
+        if query.message:
+            await restore_main_page(client, query, key)
 
     except Exception as e:
         print("Auto cancel error:", e)
-
+    
 #================= CANCEL =================
 
 @Client.on_callback_query(filters.regex("^mcancel#"))
