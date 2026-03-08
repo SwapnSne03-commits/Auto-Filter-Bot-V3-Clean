@@ -87,6 +87,7 @@ async def auto_memory_cleaner():
             temp.SMART_FILTERS.pop(key, None)
             temp.SESSION_TIME.pop(key, None)
             temp.FILTER_FILES.pop(key, None)
+            temp.PENDING_MULTI.clear()
 
 def today_date():
     return datetime.now().strftime("%Y-%m-%d")
