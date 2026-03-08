@@ -716,11 +716,6 @@ async def send_multi_files(client, query):
             url=f"https://t.me/{temp.U_NAME}?start=multifile"
         )
 
-    # popup alert
-    await query.answer(
-        "✅ sᴇʟᴇᴄᴛᴇᴅ ғɪʟᴇs ᴀʀᴇ sᴜᴄᴄᴇssғᴜʟʟʏ sᴇɴᴛ ᴛᴏ ʏᴏᴜʀ ᴘᴍ.\n\nɢᴏ ʙᴀᴄᴋ & ᴄʜᴇᴄᴋ ʙᴏᴛ ᴍᴀssᴀɢᴇ !",
-        show_alert=True
-    )
 
     # clear selection first
     temp.MULTI_FILES.pop(key, None)
@@ -742,6 +737,11 @@ async def send_multi_files(client, query):
     except Exception as e:
         print("Restore UI error:", e)
 
+    # popup alert
+    await query.answer(
+        "✅ sᴇʟᴇᴄᴛᴇᴅ ғɪʟᴇs ᴀʀᴇ sᴜᴄᴄᴇssғᴜʟʟʏ sᴇɴᴛ ᴛᴏ ʏᴏᴜʀ ᴘᴍ.\n\nɢᴏ ʙᴀᴄᴋ & ᴄʜᴇᴄᴋ ʙᴏᴛ ᴍᴀssᴀɢᴇ !",
+        show_alert=True
+	)
     # send files
     for fid in selected:
 
