@@ -646,55 +646,52 @@ async def toggle_multi_file(client, query):
 @Client.on_callback_query(filters.regex("^msend#"))
 async def send_multi_files(client, query):
 
-from plugins.commands import send_file_pipeline
+    from plugins.commands import send_file_pipeline
 
-_, key = query.data.split("#")
+    _, key = query.data.split("#")
 
-if key not in temp.GETALL:
-    return await query.answer(
-        "⚠️ Session expired. Please search again.",
-        show_alert=True
-    )
-
-# copy selection safely
-selected = list(temp.MULTI_FILES.get(key, set())).copy()
-
-if not selected:
-    return await query.answer(
-        "⚠️ You didn't select any files",
-        show_alert=True
-    )
-
-# answer instantly (prevents QUERY_ID_INVALID)
-try:
-    await query.answer("📤 Sending selected files...", show_alert=False)
-except:
-    pass
-
-grp_id = key.split("-")[0]
-
-# send files one by one
-for fid in selected:
-    try:
-        await send_file_pipeline(
-            client,
-            query,
-            str(fid),
-            grp_id
+    if key not in temp.GETALL:
+        return await query.answer(
+            "⚠️ Session expired. Please search again.",
+            show_alert=True
         )
-        await asyncio.sleep(0.35)
+
+    selected = list(temp.MULTI_FILES.get(key, set())).copy()
+
+    if not selected:
+        return await query.answer(
+            "⚠️ You didn't select any files",
+            show_alert=True
+        )
+
+    # answer instantly
+    try:
+        await query.answer("📤 Sending selected files...", show_alert=False)
+    except:
+        pass
+
+    grp_id = key.split("-")[0]
+
+    for fid in selected:
+        try:
+            await send_file_pipeline(
+                client,
+                query,
+                str(fid),
+                grp_id
+            )
+            await asyncio.sleep(0.35)
+        except Exception as e:
+            print("Send error:", e)
+
+    temp.MULTI_FILES.pop(key, None)
+    temp.MULTI_SELECT.pop(key, None)
+
+    try:
+        await restore_main_page(client, query, key)
     except Exception as e:
-        print("Send error:", e)
+        print("Restore page error:", e)
 
-# clear selection FIRST
-temp.MULTI_FILES.pop(key, None)
-temp.MULTI_SELECT.pop(key, None)
-
-# restore main page
-try:
-    await restore_main_page(client, query, key)
-except Exception as e:
-    print("Restore page error:", e)
 
 #================= CANCEL =================
 
