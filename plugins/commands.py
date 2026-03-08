@@ -217,7 +217,7 @@ async def send_file_pipeline(client, query, file_id, grp_id):
 
     try:
         msg = await client.send_cached_media(
-            chat_id=query.from_user.id,
+            chat_id=query.from_user.id if hasattr(query, "from_user") else query.chat.id,
             file_id=file_id,
             caption=f_caption,
             parse_mode=enums.ParseMode.HTML,
@@ -225,7 +225,8 @@ async def send_file_pipeline(client, query, file_id, grp_id):
             reply_markup=InlineKeyboardMarkup(btn)
         )
         return msg, DELETE_TIME
-    except:
+    except Exception as e:
+        print("Send file error:", e)
         return None
     
 @Client.on_message(filters.command("start") & filters.incoming)
@@ -258,10 +259,9 @@ async def start(client, message):
         files = data["files"]
         grp_id = data["grp_id"]
 
-        await message.reply_text(
-            "📦 Preparing your selected files..."
-        )
-
+        msg = await message.reply_text("<b>sᴇɴᴅɪɴɢ ʏᴏᴜʀ sᴇʟᴇᴄᴛᴇᴅ ғɪʟᴇs</b>...")
+        await asyncio.sleep(1)
+        await msg.delete()
         for fid in files:
             try:
                 await send_file_pipeline(
