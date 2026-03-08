@@ -148,11 +148,30 @@ def build_del_files_buttons(session):
 
     return InlineKeyboardMarkup(buttons)
 
+async def auto_delete_messages(client, messages, notice_msg, delete_time):
+
+    await asyncio.sleep(delete_time)
+
+    for m in messages:
+        try:
+            await m.delete()
+        except:
+            pass
+
+    try:
+        await notice_msg.edit_text(
+            "<b>ʏᴏᴜʀ ꜰɪʟᴇꜱ ʜᴀᴠᴇ ʙᴇᴇɴ ᴅᴇʟᴇᴛᴇᴅ.\nᴘʟᴇᴀsᴇ sᴇᴀʀᴄʜ ᴀɢᴀɪɴ.</b>",
+            parse_mode=enums.ParseMode.HTML
+        )
+    except:
+        pass
+
+
 async def send_file_pipeline(client, query, file_id, grp_id):
 
     files_ = await get_file_details(file_id)
     if not files_:
-        return
+        return None
 
     files = files_[0]
 
@@ -178,7 +197,7 @@ async def send_file_pipeline(client, query, file_id, grp_id):
 
             f_caption = clean_special_words(f_caption)
 
-        except Exception:
+        except:
             pass
 
     if f_caption is None:
@@ -205,33 +224,9 @@ async def send_file_pipeline(client, query, file_id, grp_id):
             protect_content=settings.get('file_secure', PROTECT_CONTENT),
             reply_markup=InlineKeyboardMarkup(btn)
         )
+        return msg, DELETE_TIME
     except:
-        return
-
-    k = await client.send_message(
-        chat_id=query.from_user.id,
-        text=(
-            f"<b><u>❗️IMPORTANT❗️</u>\n\n"
-            f"ᴛʜɪꜱ ꜰɪʟᴇ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ {get_time(DELETE_TIME)} 🫥\n\n"
-            f"ᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ᴛʜɪꜱ ꜰɪʟᴇ ꜱᴏᴍᴇᴡʜᴇʀᴇ ᴇʟꜱᴇ.</b>"
-        ),
-        parse_mode=enums.ParseMode.HTML
-    )
-
-    await asyncio.sleep(DELETE_TIME)
-
-    try:
-        await msg.delete()
-    except:
-        pass
-
-    try:
-        await k.edit_text(
-            "<b>ʏᴏᴜʀ ꜰɪʟᴇ ɪꜱ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ᴅᴇʟᴇᴛᴇᴅ !!</b>",
-            parse_mode=enums.ParseMode.HTML
-        )
-    except:
-        pass   
+        return None
     
 @Client.on_message(filters.command("start") & filters.incoming)
 async def start(client, message):
