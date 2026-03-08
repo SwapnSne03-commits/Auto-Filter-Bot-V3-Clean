@@ -56,7 +56,9 @@ class temp(object):
     DAILY_USAGE = {} 
     ACTIVE_FILTER = {}
     OWNER = {}   # ✅ এটা add করো
-
+    MULTI_SELECT = {}   # key -> True হলে select mode active
+    MULTI_FILES = {}    # key -> set(file_ids)
+    
 def today_date():
     return datetime.now().strftime("%Y-%m-%d")
 
