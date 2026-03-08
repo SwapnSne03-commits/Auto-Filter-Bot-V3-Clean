@@ -58,7 +58,34 @@ class temp(object):
     OWNER = {}   # ✅ এটা add করো
     MULTI_SELECT = {}   # key -> True হলে select mode active
     MULTI_FILES = {}    # key -> set(file_ids)
-    
+    SESSION_TIME = {}
+
+
+async def auto_memory_cleaner():
+
+    while True:
+
+        await asyncio.sleep(600)  # run every 10 min
+
+        now = time.time()
+
+        expired = []
+
+        for key, ts in temp.SESSION_TIME.items():
+
+            if now - ts > 1800:  # 30 min expiry
+                expired.append(key)
+
+        for key in expired:
+
+            temp.GETALL.pop(key, None)
+            temp.MULTI_FILES.pop(key, None)
+            temp.MULTI_SELECT.pop(key, None)
+            temp.ACTIVE_FILTER.pop(key, None)
+            temp.PAGE_STATE.pop(key, None)
+            temp.SMART_FILTERS.pop(key, None)
+            temp.SESSION_TIME.pop(key, None)
+
 def today_date():
     return datetime.now().strftime("%Y-%m-%d")
 
