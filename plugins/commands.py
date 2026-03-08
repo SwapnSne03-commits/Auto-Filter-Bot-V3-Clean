@@ -175,6 +175,9 @@ async def send_file_pipeline(client, query, file_id, grp_id):
 
     files = files_[0]
 
+    # detect user id safely (query or message)
+    user_id = query.from_user.id if hasattr(query, "from_user") else query.chat.id
+
     title = clean_special_words(clean_filename(files.file_name))
     size = get_size(files.file_size)
 
@@ -203,6 +206,7 @@ async def send_file_pipeline(client, query, file_id, grp_id):
     if f_caption is None:
         f_caption = clean_special_words(clean_filename(files.file_name))
 
+    # buttons
     if STREAM_MODE:
         btn = [
             [InlineKeyboardButton('𝖦𝖾𝗇𝖾𝗋𝖺𝗍𝖾 𝖲𝗍𝗋𝖾𝖺𝗆𝗂𝗇𝗀 𝖫𝗂𝗇𝗄', callback_data=f'streamfile:{file_id}')],
@@ -216,15 +220,32 @@ async def send_file_pipeline(client, query, file_id, grp_id):
         ]
 
     try:
+
         msg = await client.send_cached_media(
-            chat_id=query.from_user.id if hasattr(query, "from_user") else query.chat.id,
+            chat_id=user_id,
             file_id=file_id,
             caption=f_caption,
             parse_mode=enums.ParseMode.HTML,
             protect_content=settings.get('file_secure', PROTECT_CONTENT),
             reply_markup=InlineKeyboardMarkup(btn)
         )
+
+        # warning message
+        warn = await client.send_message(
+            user_id,
+            f"<b>❗️IMPORTANT\n\n"
+            f"ᴛʜɪs ꜰɪʟᴇ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ {get_time(DELETE_TIME)}.\n"
+            f"ᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ɪᴛ ᴛᴏ sᴀᴠᴇᴅ ᴍᴇssᴀɢᴇs.</b>",
+            parse_mode=enums.ParseMode.HTML
+        )
+
+        # schedule auto delete
+        asyncio.create_task(
+            auto_delete_messages(client, [msg], warn, DELETE_TIME)
+        )
+
         return msg, DELETE_TIME
+
     except Exception as e:
         print("Send file error:", e)
         return None
@@ -259,22 +280,40 @@ async def start(client, message):
         files = data["files"]
         grp_id = data["grp_id"]
 
-        msg = await message.reply_text("<b>sᴇɴᴅɪɴɢ ʏᴏᴜʀ sᴇʟᴇᴄᴛᴇᴅ ғɪʟᴇs</b>...")
+        msg = await message.reply_text(
+            "📦 Preparing your selected files..."
+        )
+
         await asyncio.sleep(1)
-        await msg.delete()
+
+        sent_msgs = []
+        delete_time = None
+
         for fid in files:
             try:
-                await send_file_pipeline(
+                result = await send_file_pipeline(
                     client,
                     message,
                     str(fid),
                     grp_id
                 )
-                await asyncio.sleep(0.4)
-            except:
-                pass
 
+                if result:
+                    sent_msg, delete_time = result
+                    sent_msgs.append(sent_msg)
+
+                await asyncio.sleep(0.3)
+
+            except Exception as e:
+                print("Multi send error:", e)
+
+        # clear pending queue
         temp.PENDING_MULTI.pop(user_id, None)
+
+        try:
+            await msg.delete()
+        except:
+            pass
 
         return
     if len(m.command) == 2 and m.command[1].startswith(('notcopy', 'sendall')):
