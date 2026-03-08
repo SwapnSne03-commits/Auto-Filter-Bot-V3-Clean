@@ -726,17 +726,20 @@ async def send_multi_files(client, query):
         "current_offset": 0
 	}
     # restore main result page
+    # force remove select UI
+    try:
+        if query.message:
+            await query.message.edit_reply_markup(None)
+            await asyncio.sleep(0.2)
+    except Exception as e:
+        print("Clear UI error:", e)
     # restore main result page (same as cancel button)
     try:
         await restore_main_page(client, query, key)
+        await asyncio.sleep(0.1)
     except Exception as e:
         print("Restore UI error:", e)
 
-    # popup alert
-    await query.answer(
-        "✅ sᴇʟᴇᴄᴛᴇᴅ ғɪʟᴇs ᴀʀᴇ sᴜᴄᴄᴇssғᴜʟʟʏ sᴇɴᴛ ᴛᴏ ʏᴏᴜʀ ᴘᴍ.\n\nɢᴏ ʙᴀᴄᴋ & ᴄʜᴇᴄᴋ ʙᴏᴛ ᴍᴀssᴀɢᴇ !",
-        show_alert=True
-	)
     # send files
     for fid in selected:
 
