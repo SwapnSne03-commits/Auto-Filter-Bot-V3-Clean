@@ -683,13 +683,16 @@ async def send_multi_files(client, query):
         return await query.answer(
             "🚫 ɴᴏᴛ ʏᴏᴜʀ ʀᴇǫᴜᴇsᴛ ʙᴜᴅᴅʏ !!",
             show_alert=True
-		)
+        )
 
     if key not in temp.GETALL:
         return await query.answer(
             "⚠️ Session expired. Please search again.",
             show_alert=True
         )
+
+    user_id = query.from_user.id
+    grp_id = key.split("-")[0]
 
     selected = list(temp.MULTI_FILES.get(key, set()))
 
@@ -699,12 +702,24 @@ async def send_multi_files(client, query):
             show_alert=True
         )
 
+    # check if user started bot
+    try:
+        await client.send_chat_action(user_id, "typing")
+    except:
+
+        temp.PENDING_MULTI[user_id] = {
+            "files": selected,
+            "grp_id": grp_id
+        }
+
+        return await query.answer(
+            url=f"https://t.me/{temp.U_NAME}?start=multifile"
+        )
+
     await query.answer(
         "✅ sᴇʟᴇᴄᴛᴇᴅ ғɪʟᴇs ᴀʀᴇ sᴜᴄᴄᴇssғᴜʟʟʏ sᴇɴᴛ ᴛᴏ ʏᴏᴜʀ ᴘᴍ.\n\nɢᴏ ʙᴀᴄᴋ & ᴄʜᴇᴄᴋ ʙᴏᴛ ᴍᴀssᴀɢᴇ !",
         show_alert=True
-	    )
-
-    grp_id = query.message.chat.id
+    )
 
     temp.MULTI_FILES.pop(key, None)
     temp.MULTI_SELECT.pop(key, None)
@@ -718,7 +733,13 @@ async def send_multi_files(client, query):
     delete_time = None
 
     for fid in selected:
-        result = await send_file_pipeline(client, query, str(fid), grp_id)
+
+        result = await send_file_pipeline(
+            client,
+            query,
+            str(fid),
+            grp_id
+        )
 
         if result:
             msg, delete_time = result
@@ -730,13 +751,14 @@ async def send_multi_files(client, query):
 
         notice = await client.send_message(
             query.from_user.id,
-            f"<b>❗️IMPORTANT\n\nᴛʜᴇsᴇ ғɪʟᴇs ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ {get_time(delete_time)}.\nᴘʟᴇᴀsᴇ ғᴏʀᴡᴀʀᴅ ᴛʜᴇsᴇ ғɪʟᴇs ᴛᴏ ʏᴏᴜʀ sᴀᴠᴇᴅ ᴍᴀssᴀɢᴇ ᴀɴᴅ sᴛᴀʀᴛ ᴅᴏᴡɴʟᴏᴀᴅ ᴛʜᴇʀᴇ!!</b>",
+            f"<b>❗️IMPORTANT\n\nᴛʜᴇsᴇ ғɪʟᴇs ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ {get_time(delete_time)}.\n"
+            f"ᴘʟᴇᴀsᴇ ғᴏʀᴡᴀʀᴅ ᴛʜᴇsᴇ ғɪʟᴇs ᴛᴏ ʏᴏᴜʀ sᴀᴠᴇᴅ ᴍᴀssᴀɢᴇ.</b>",
             parse_mode=enums.ParseMode.HTML
         )
 
         asyncio.create_task(
             auto_delete_messages(client, sent_msgs, notice, delete_time)
-	)
+		)
 
 #================= CANCEL =================
 
