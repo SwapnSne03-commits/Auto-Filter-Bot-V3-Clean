@@ -59,7 +59,7 @@ class temp(object):
     MULTI_SELECT = {}   # key -> True হলে select mode active
     MULTI_FILES = {}    # key -> set(file_ids)
     SESSION_TIME = {}
-
+    FILTER_FILES = {}
 
 async def auto_memory_cleaner():
 
