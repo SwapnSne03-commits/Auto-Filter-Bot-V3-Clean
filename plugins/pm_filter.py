@@ -731,11 +731,15 @@ async def send_multi_files(client, query):
 	}
     # restore main result page
     try:
-        await restore_main_page(client, query, key)
-    except:
-        pass
+        # force remove select UI first
+        await query.message.edit_reply_markup(None)
+        await asyncio.sleep(0.2)
 
-    await asyncio.sleep(0.3)
+        # load main result page
+        await restore_main_page(client, query, key)
+
+    except Exception as e:
+        print("Restore UI error:", e)
 
     # send files
     for fid in selected:
