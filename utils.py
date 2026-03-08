@@ -50,16 +50,16 @@ class temp(object):
     B_NAME = None
     B_LINK = None
     GETALL = {}
+    FILTER_FILES = {}
     SHORT = {}
     IMDB_CAP = {}
     VERIFICATIONS = {}
     DAILY_USAGE = {} 
     ACTIVE_FILTER = {}
-    OWNER = {}   # ✅ এটা add করো
+    OWNER = {}  
     MULTI_SELECT = {}   # key -> True হলে select mode active
     MULTI_FILES = {}    # key -> set(file_ids)
     SESSION_TIME = {}
-    FILTER_FILES = {}
 
 async def auto_memory_cleaner():
 
