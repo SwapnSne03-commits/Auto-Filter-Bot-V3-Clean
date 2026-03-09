@@ -786,26 +786,6 @@ async def cancel_multi_select(client, query):
     await query.answer("sᴇʟᴇᴄᴛɪᴏɴ ᴄᴀɴᴄᴇʟᴇᴅ..")
 
     await restore_main_page(client, query, key)
-
-from plugins.pm_filter import fl
-async def restore_main_page(client, query, key):
-
-    if key not in temp.GETALL:
-        return
-
-    temp.MULTI_SELECT[key] = False
-
-    try:
-        await query.message.edit_reply_markup(None)
-    except:
-        pass
-
-    # trigger same callback
-    await query.answer()
-
-    query.data = f"fl#homepage#{key}#0"
-
-    await fl(client, query)
     
 
 # ================= OLD QUALITY CALLBACK =================
@@ -1924,6 +1904,28 @@ async def filter_season_cb_handler(client: Client, query: CallbackQuery):
 
     except Exception as e:
         LOGGER.error(f"Error In Season Filter - {e}")
+
+async def restore_main_page(client, query, key):
+
+    if key not in temp.GETALL:
+        return
+
+    temp.MULTI_SELECT[key] = False
+
+    try:
+        await query.message.edit_reply_markup(None)
+    except:
+        pass
+
+    try:
+        await query.answer()
+    except:
+        pass
+
+    query.data = f"fl#homepage#{key}#0"
+
+    # call same handler used by back button
+    await filter_language_cb_handler(client, query)
 
 @Client.on_callback_query(filters.regex(r"^fc#"))
 async def combined_filter(client, query):
