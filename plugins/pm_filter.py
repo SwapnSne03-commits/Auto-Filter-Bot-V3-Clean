@@ -796,7 +796,11 @@ async def restore_main_page(client, query, key):
     query.data = f"fl#homepage#{key}#0"
 
     # call same handler used by "Back to main page"
-    await fl(client, query)
+    try:
+        await globals()["fl"](client, query)
+    finally:
+        query.data = original_data
+    
 
 # ================= OLD QUALITY CALLBACK =================
 async def old_qualities_cb(client: Client, query: CallbackQuery):
