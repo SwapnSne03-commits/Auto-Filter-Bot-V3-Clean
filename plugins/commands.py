@@ -252,6 +252,28 @@ async def send_file_pipeline(client, query, file_id, grp_id):
     try:
         DELETE_TIME = int(DELETE_TIME or AUTO_DELETE_TIME)
 
+        cache = temp.AUTO_DELETE_CACHE.setdefault(user_id, {
+            "messages": [],
+            "warn": None,
+            "delete_time": DELETE_TIME,
+            "task": None
+        })
+
+        # warning message
+        if cache["warn"] is None:
+
+            user_name = query.from_user.first_name if hasattr(query, "from_user") else "User"
+            user_mention = f'<a href="tg://user?id={user_id}">{user_name}</a>'
+            warn = await client.send_message(
+                user_id,
+                f"<b>👋 ʜᴇʏ {user_mention},</b>\n\n"
+                f"<b>ᴀʟʟ sᴇɴᴅᴇᴅ ꜰɪʟᴇs ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ᴀғᴛᴇʀ {get_time(DELETE_TIME)}.</b>\n"
+                f"<b>ᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ɪᴛ ᴛᴏ ʏᴏᴜʀ sᴀᴠᴇᴅ ᴍᴇssᴀɢᴇs ᴀɴᴅ sᴛᴀʀᴛ ᴅᴏᴡɴʟᴏᴀᴅ ᴛʜᴇʀᴇ!!</b>",
+                parse_mode=enums.ParseMode.HTML
+            )
+
+            cache["warn"] = warn
+
         msg = await client.send_cached_media(
             chat_id=user_id,
             file_id=file_id,
@@ -260,27 +282,7 @@ async def send_file_pipeline(client, query, file_id, grp_id):
             protect_content=settings.get('file_secure', PROTECT_CONTENT),
             reply_markup=InlineKeyboardMarkup(btn)
         )
-
-        cache = temp.AUTO_DELETE_CACHE.setdefault(user_id, {
-            "messages": [],
-            "warn": None,
-            "delete_time": DELETE_TIME,
-            "task": None
-        })
         cache["messages"].append(msg)
-        # warning message
-        if cache["warn"] is None:
-
-            warn = await client.send_message(
-                user_id,
-                f"<b>❗️❗️ IMPORTANT ❗️❗️\n\n"
-                f"ᴛʜɪs ꜰɪʟᴇ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ {get_time(DELETE_TIME)}.\n"
-                f"ᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ɪᴛ ᴛᴏ ʏᴏᴜʀ sᴀᴠᴇᴅ ᴍᴇssᴀɢᴇs ᴀɴᴅ sᴛᴀʀᴛ ᴅᴏᴡɴʟᴏᴀᴅ ᴛʜᴇʀᴇ!!</b>",
-                parse_mode=enums.ParseMode.HTML
-            )
-
-            cache["warn"] = warn
-
         # start delete timer only once
         if cache["task"] is None:
 
