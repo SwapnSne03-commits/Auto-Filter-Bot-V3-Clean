@@ -494,7 +494,6 @@ async def next_page(bot, query):
         LOGGER.error(f"Error In Next Funtion - {e}")
 
 # ================= MULTI SELECT SYSTEM =================
-
 @Client.on_callback_query(filters.regex("^ms#"))
 async def start_multi_select(client, query):
 
@@ -505,32 +504,28 @@ async def start_multi_select(client, query):
     except:
         offset = 0
 
-    offset = int(temp.PAGE_STATE.get(key, {}).get("current_offset", offset))
-
     owner_id = temp.OWNER.get(key)
 
     if not owner_id or query.from_user.id != owner_id:
         return await query.answer(
             "🚫 ɴᴏᴛ ʏᴏᴜʀ ʀᴇǫᴜᴇsᴛ ʙᴜᴅᴅʏ !!",
             show_alert=True
-	    )
+        )
+
     if key not in temp.GETALL:
         return await query.answer(
             "⚠️ This session expired.\nPlease search again.",
             show_alert=True
         )
 
-    # activate multi select mode
-    temp.MULTI_SELECT[key] = True
+    if not temp.MULTI_SELECT.get(key):
+        temp.MULTI_SELECT[key] = True
+        temp.MULTI_FILES.setdefault(key, set())
 
-    # ensure selection storage exists
-    temp.MULTI_FILES.setdefault(key, set())
-
-    all_files = temp.FILTER_FILES.get(key) or temp.GETALL.get(key, [])
-
-    await query.answer()  # close loading spinner
+    await query.answer()
 
     await build_multi_page(client, query, key, offset)
+
 
 async def build_multi_page(client, query, key, offset):
 
