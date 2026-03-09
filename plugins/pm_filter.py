@@ -748,7 +748,7 @@ async def auto_cancel_multi(client, query, key):
 
         # clear selection memory
         temp.MULTI_FILES.pop(key, None)
-        temp.MULTI_SELECT.pop(key, None)
+        temp.MULTI_SELECT[key] = False
 
         # session expired check
         if key not in temp.GETALL:
@@ -777,7 +777,7 @@ async def cancel_multi_select(client, query):
 		)
 
     temp.MULTI_FILES.pop(key, None)
-    temp.MULTI_SELECT.pop(key, None)
+    temp.MULTI_SELECT[key] = False
 
     await query.answer("sᴇʟᴇᴄᴛɪᴏɴ ᴄᴀɴᴄᴇʟᴇᴅ..")
 
@@ -790,75 +790,13 @@ async def restore_main_page(client, query, key):
         return
 
     temp.MULTI_SELECT[key] = False
-    
-    # 🔧 reset page state
-    #temp.PAGE_STATE[key] = {"current_offset": 0}
-	
-    all_files = temp.GETALL.get(key, [])
 
-    settings = await get_settings(query.message.chat.id)
-    per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
+    # modify callback data same as back button
+	original_data = query.data
+    query.data = f"fl#homepage#{key}#0"
 
-    offset = 0
-    files = all_files[offset: offset + per_page]
-    total = len(all_files)
-
-
-    req = query.from_user.id
-
-    btn = [
-        [
-            InlineKeyboardButton(
-                text=f"{silent_size(f.file_size)} ✦ {extract_tag(f.file_name)} {clean_filename(f.file_name)}",
-                callback_data=f"file#{f.file_id}"
-            )
-        ]
-        for f in files
-    ]
-
-    combined_files = bool(temp.SMART_FILTERS.get(key, {}).get("combined"))
-
-    btn.insert(0, [
-        InlineKeyboardButton("ᴘɪxᴇʟ", callback_data=f"qualities#{key}#0"),
-        InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data=f"languages#{key}#0"),
-        InlineKeyboardButton("ꜱᴇᴀꜱᴏɴ", callback_data=f"seasons#{key}#0")
-    ])
-    if combined_files:
-        btn.insert(1, [
-            InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"fc#{key}#0"),
-            InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#{offset}")
-        ])
-    else:
-        btn.insert(1, [
-            InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#{offset}")
-        ])
-
-    # pagination
-    if total > offset + per_page:
-
-        total_pages = math.ceil(total / per_page)
-        
-        next_offset = offset + per_page
-	
-        btn.append([
-            InlineKeyboardButton("ᴘᴀɢᴇ", callback_data="pages"),
-            InlineKeyboardButton(f"{(offset // per_page) + 1}/{total_pages}", callback_data="pages"),
-            InlineKeyboardButton("ɴᴇxᴛ ⋟", callback_data=f"next_{req}_{key}_{next_offset}")
-        ])
-
-    else:
-
-        btn.append([
-            InlineKeyboardButton(
-                "↭ ɴᴏ ᴍᴏʀᴇ ᴘᴀɢᴇꜱ ᴀᴠᴀɪʟᴀʙʟᴇ ↭",
-                callback_data="pages"
-            )
-        ])
-
-    await query.message.edit_reply_markup(
-        reply_markup=InlineKeyboardMarkup(btn)
-	)
-    
+    # call same handler used by "Back to main page"
+    await fl(client, query)
 
 # ================= OLD QUALITY CALLBACK =================
 async def old_qualities_cb(client: Client, query: CallbackQuery):
