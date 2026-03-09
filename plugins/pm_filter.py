@@ -505,6 +505,8 @@ async def start_multi_select(client, query):
     except:
         offset = 0
 
+    offset = int(temp.PAGE_STATE.get(key, {}).get("current_offset", offset))
+
     owner_id = temp.OWNER.get(key)
 
     if not owner_id or query.from_user.id != owner_id:
@@ -531,6 +533,8 @@ async def start_multi_select(client, query):
     await build_multi_page(client, query, key, offset)
 
 async def build_multi_page(client, query, key, offset):
+
+    temp.PAGE_STATE[key] = {"current_offset": offset}
 
     settings = await get_settings(query.message.chat.id)
     per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
@@ -783,7 +787,7 @@ async def cancel_multi_select(client, query):
 
     await restore_main_page(client, query, key)
 
-
+from plugins.pm_filter import fl
 async def restore_main_page(client, query, key):
 
     if key not in temp.GETALL:
@@ -791,15 +795,17 @@ async def restore_main_page(client, query, key):
 
     temp.MULTI_SELECT[key] = False
 
-    # modify callback data same as back button
-    original_data = query.data
+    try:
+        await query.message.edit_reply_markup(None)
+    except:
+        pass
+
+    # trigger same callback
+    await query.answer()
+
     query.data = f"fl#homepage#{key}#0"
 
-    # call same handler used by "Back to main page"
-    try:
-        await globals()["fl"](client, query)
-    finally:
-        query.data = original_data
+    await fl(client, query)
     
 
 # ================= OLD QUALITY CALLBACK =================
