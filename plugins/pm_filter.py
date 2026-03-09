@@ -790,13 +790,18 @@ async def restore_main_page(client, query, key):
         return
 
     temp.MULTI_SELECT[key] = False
+    temp.SMART_FILTERS.pop(key, None)
+    temp.FILTER_FILES.pop(key, None)
 
+    # 🔧 reset page state
+    #temp.PAGE_STATE[key] = {"current_offset": 0}
+	
     all_files = temp.GETALL.get(key, [])
 
     settings = await get_settings(query.message.chat.id)
     per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
 
-    offset = int(temp.PAGE_STATE.get(key, {}).get("current_offset", 0) or 0)
+    offset = 0
     files = all_files[offset: offset + per_page]
     total = len(all_files)
 
