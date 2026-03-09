@@ -39,6 +39,9 @@ CACHE_LIMIT = 200
 
 lock = asyncio.Lock()
 
+if not hasattr(temp, "PAGE_STATE"):
+    temp.PAGE_STATE = {}
+
 def is_meaningful_query(search: str) -> bool:
 
     tokens = search.split()
