@@ -166,6 +166,36 @@ async def auto_delete_messages(client, messages, notice_msg, delete_time):
     except:
         pass
 
+async def process_auto_delete(client, user_id):
+
+    cache = temp.AUTO_DELETE_CACHE.get(user_id)
+    if not cache:
+        return
+
+    delete_time = cache["delete_time"]
+    warn = cache["warn"]
+    messages = cache["messages"]
+
+    await asyncio.sleep(delete_time)
+
+    for m in messages:
+        try:
+            await m.delete()
+        except:
+            pass
+
+    try:
+        await warn.edit_text(
+            "<b>ʏᴏᴜʀ ꜰɪʟᴇꜱ ʜᴀᴠᴇ ʙᴇᴇɴ ᴅᴇʟᴇᴛᴇᴅ.\nᴘʟᴇᴀꜱᴇ ꜱᴇᴀʀᴄʜ ᴀɢᴀɪɴ.</b>",
+            parse_mode=enums.ParseMode.HTML
+        )
+    except:
+        pass
+
+    temp.AUTO_DELETE_CACHE.pop(user_id, None)
+
+if not hasattr(temp, "AUTO_DELETE_CACHE"):
+        temp.AUTO_DELETE_CACHE = {}
 
 async def send_file_pipeline(client, query, file_id, grp_id):
 
@@ -220,6 +250,7 @@ async def send_file_pipeline(client, query, file_id, grp_id):
         ]
 
     try:
+        DELETE_TIME = int(DELETE_TIME or AUTO_DELETE_TIME)
 
         msg = await client.send_cached_media(
             chat_id=user_id,
@@ -230,19 +261,32 @@ async def send_file_pipeline(client, query, file_id, grp_id):
             reply_markup=InlineKeyboardMarkup(btn)
         )
 
+        cache = temp.AUTO_DELETE_CACHE.setdefault(user_id, {
+            "messages": [],
+            "warn": None,
+            "delete_time": DELETE_TIME,
+            "task": None
+        })
+        cache["messages"].append(msg)
         # warning message
-        warn = await client.send_message(
-            user_id,
-            f"<b>❗️IMPORTANT\n\n"
-            f"ᴛʜɪs ꜰɪʟᴇ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ {get_time(DELETE_TIME)}.\n"
-            f"ᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ɪᴛ ᴛᴏ sᴀᴠᴇᴅ ᴍᴇssᴀɢᴇs.</b>",
-            parse_mode=enums.ParseMode.HTML
-        )
+        if cache["warn"] is None:
 
-        # schedule auto delete
-        asyncio.create_task(
-            auto_delete_messages(client, [msg], warn, DELETE_TIME)
-        )
+            warn = await client.send_message(
+                user_id,
+                f"<b>❗️❗️ IMPORTANT ❗️❗️\n\n"
+                f"ᴛʜɪs ꜰɪʟᴇ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ {get_time(DELETE_TIME)}.\n"
+                f"ᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ɪᴛ ᴛᴏ ʏᴏᴜʀ sᴀᴠᴇᴅ ᴍᴇssᴀɢᴇs ᴀɴᴅ sᴛᴀʀᴛ ᴅᴏᴡɴʟᴏᴀᴅ ᴛʜᴇʀᴇ!!</b>",
+                parse_mode=enums.ParseMode.HTML
+            )
+
+            cache["warn"] = warn
+
+        # start delete timer only once
+        if cache["task"] is None:
+
+            cache["task"] = asyncio.create_task(
+                process_auto_delete(client, user_id)
+            )
 
         return msg, DELETE_TIME
 
