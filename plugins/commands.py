@@ -308,7 +308,14 @@ async def start(client, message):
         return
     m = message
     # MULTI FILE AUTO DELIVERY
-    if len(message.command) == 2 and message.command[1] == "multifile":
+    if len(message.command) == 2 and message.command[1].startswith("multifile"):
+
+        try:
+            _, uid = message.command[1].split("_")
+            if int(uid) != message.from_user.id:
+                return await message.reply_text("⚠️ This request is not for you.")
+        except:
+            pass
 
         from plugins.commands import send_file_pipeline
 
@@ -324,8 +331,82 @@ async def start(client, message):
         files = data["files"]
         grp_id = data["grp_id"]
 
+        settings = await get_settings(int(grp_id))
+
+        direct_fsubs = settings.get('fsub_id') or []
+        req_fsubs = settings.get('req_fsub_id') or []
+
+        if not isinstance(direct_fsubs, list):
+            direct_fsubs = [direct_fsubs]
+
+        if not isinstance(req_fsubs, list):
+            req_fsubs = [req_fsubs]
+
+        from info import GLOBAL_FSUB_CHANNELS, GLOBAL_REQ_FSUB_CHANNELS
+
+        direct_fsubs += GLOBAL_FSUB_CHANNELS
+        req_fsubs += GLOBAL_REQ_FSUB_CHANNELS
+
+        direct_fsubs = list(dict.fromkeys(direct_fsubs))
+        req_fsubs = list(dict.fromkeys(req_fsubs))
+
+        fsub_ids = []
+
+        for ch in direct_fsubs:
+            if ch:
+                fsub_ids.append((ch, False))
+
+        for ch in req_fsubs:
+            if ch:
+                fsub_ids.append((ch, True))
+
+        tasks = [
+            check_force_subscription(
+                client,
+                message.from_user.id,
+                chnl,
+                is_req,
+                is_subscribed,
+                is_req_subscribed,
+                message
+            )
+            for chnl, is_req in fsub_ids
+        ]
+
+        results = await asyncio.gather(*tasks)
+
+        btn = []
+        i = 1
+
+        for res in results:
+            if res:
+                btn.append([
+                    InlineKeyboardButton(
+                        f"⛔️ {i}. {res['title']} ⛔️",
+                        url=res['url']
+                    )
+                ])
+                i += 1
+
+        if btn:
+            btn.append([
+                InlineKeyboardButton(
+                    "♻️ ᴛʀʏ ᴀɢᴀɪɴ ♻️",
+                    url=f"https://t.me/{temp.U_NAME}?start=multifile_{message.from_user.id}"
+                )
+            ])
+
+            await client.send_photo(
+                chat_id=message.from_user.id,
+                photo=random.choice(FSUB_IMG),
+                caption=script.FORCESUB_TEXT,
+                reply_markup=InlineKeyboardMarkup(btn),
+                parse_mode=enums.ParseMode.HTML,
+            )
+            return
+
         msg = await message.reply_text(
-            "📦 Preparing your selected files..."
+            "✨ <b>sᴇɴᴅɪɴɢ ᴀʟʟ sᴇʟᴇᴄᴛᴇᴅ ғɪʟᴇs...</b>"
         )
 
         await asyncio.sleep(1)
