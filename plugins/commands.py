@@ -168,7 +168,7 @@ async def auto_delete_messages(client, messages, notice_msg, delete_time):
 
 async def process_auto_delete(client, user_id):
 
-    cache = temp.AUTO_DELETE_CACHE.get(user_id)
+    cache = temp.AUTO_DELETE_CACHE.get(cache_key)
     if not cache:
         return
 
@@ -192,7 +192,7 @@ async def process_auto_delete(client, user_id):
     except:
         pass
 
-    temp.AUTO_DELETE_CACHE.pop(user_id, None)
+    temp.AUTO_DELETE_CACHE.pop(cache_key, None)
 
 if not hasattr(temp, "AUTO_DELETE_CACHE"):
         temp.AUTO_DELETE_CACHE = {}
@@ -252,7 +252,8 @@ async def send_file_pipeline(client, query, file_id, grp_id):
     try:
         DELETE_TIME = int(DELETE_TIME or AUTO_DELETE_TIME)
 
-        cache = temp.AUTO_DELETE_CACHE.setdefault(user_id, {
+        cache_key = f"{user_id}_{int(time.time())}"
+        cache = temp.AUTO_DELETE_CACHE.setdefault(cache_key, {
             "messages": [],
             "warn": None,
             "delete_time": DELETE_TIME,
