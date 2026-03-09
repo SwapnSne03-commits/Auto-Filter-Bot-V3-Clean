@@ -3163,6 +3163,8 @@ async def cb_handler(client: Client, query: CallbackQuery):
 			
         
 async def auto_filter(client, msg, spoll=False):
+    temp.PAGE_STATE[key] = {"current_offset": 0}
+
     chat_id = msg.chat.id
     settings = await get_settings(chat_id)
 
@@ -3647,6 +3649,7 @@ async def auto_filter(client, msg, spoll=False):
 
         btn.insert(0, top_row)
 
+        current_offset = temp.PAGE_STATE.get(key, {}).get("current_offset", 0)
         if combined_files:
             btn.insert(1, [
                 InlineKeyboardButton(
@@ -3655,14 +3658,14 @@ async def auto_filter(client, msg, spoll=False):
                 ),
                 InlineKeyboardButton(
                     "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
-                    callback_data=f"ms#{key}#{offset}"
+                    callback_data=f"ms#{key}#{current_offset}"
                 )
             ])
         else:
             btn.insert(1, [
                 InlineKeyboardButton(
                     "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
-                    callback_data=f"ms#{key}#{offset}"
+                    callback_data=f"ms#{key}#{current_offset}"
                 )
             ])
 
@@ -3691,6 +3694,7 @@ async def auto_filter(client, msg, spoll=False):
 
         btn.insert(0, top_row)
 
+        current_offset = temp.PAGE_STATE.get(key, {}).get("current_offset", 0)
         if combined_files:
             btn.insert(1, [
                 InlineKeyboardButton(
@@ -3699,14 +3703,14 @@ async def auto_filter(client, msg, spoll=False):
                 ),
                 InlineKeyboardButton(
                     "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
-                    callback_data=f"ms#{key}#{offset}"
+                    callback_data=f"ms#{key}#{current_offset}"
 				)
             ])
         else:
             btn.insert(1, [
                 InlineKeyboardButton(
                     "ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ",
-                    callback_data=f"ms#{key}#{offset}"
+                    callback_data=f"ms#{key}#{current_offset}"
                 )
             ])
 
