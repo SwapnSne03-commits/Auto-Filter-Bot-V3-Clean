@@ -422,6 +422,9 @@ async def start(client, message):
 
         await asyncio.sleep(1)
 
+        settings = await get_settings(int(grp_id))
+        DELETE_TIME = settings.get("auto_del_time", AUTO_DELETE_TIME)
+
         user_name = message.from_user.first_name
         user_mention = f'<a href="tg://user?id={user_id}">{user_name}</a>'
         warn = await message.reply_text(
