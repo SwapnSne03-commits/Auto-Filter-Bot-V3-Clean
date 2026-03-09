@@ -790,9 +790,7 @@ async def restore_main_page(client, query, key):
         return
 
     temp.MULTI_SELECT[key] = False
-    temp.SMART_FILTERS.pop(key, None)
-    temp.FILTER_FILES.pop(key, None)
-
+    
     # 🔧 reset page state
     #temp.PAGE_STATE[key] = {"current_offset": 0}
 	
