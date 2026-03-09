@@ -3286,9 +3286,12 @@ async def auto_filter(client, msg, spoll=False):
                 # Variant 2 → replace symbols with space
                 variant2 = re.sub(r"[\'\:\.,/]", " ", raw)
 
+                # Variant 3 → specifically handle '
+                variant3 = raw.replace("'", " ")
+
                 variants = []
 
-                for v in [variant1, variant2]:
+                for v in [variant1, variant2, variant3]:
 
                     v = v.replace("-", " ")
                     v = re.sub(r'[^a-zA-Z0-9\s]', '', v)
@@ -3297,6 +3300,8 @@ async def auto_filter(client, msg, spoll=False):
                     if v and v != search:
                         variants.append(v)
 
+                variants = list(dict.fromkeys(variants))  # remove duplicates
+		
                 for v in variants:
                     files, offset, total_results = await get_search_results(
                        message.chat.id,
