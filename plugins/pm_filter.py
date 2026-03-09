@@ -724,8 +724,6 @@ async def send_multi_files(client, query):
     temp.MULTI_FILES.pop(key, None)
     temp.MULTI_SELECT.pop(key, None)
 
-    sent_msgs = []
-    delete_time = None
     # send files
     for fid in selected:
 
@@ -736,24 +734,9 @@ async def send_multi_files(client, query):
                 str(fid),
                 grp_id
             )
-            if result:
-                msg, delete_time = result
-                sent_msgs.append(msg)
+
             await asyncio.sleep(0.25)
 
-        if sent_msgs and delete_time:
-
-            warn = await client.send_message(
-                user_id,
-                f"<b>❗️❗️ IMPORTANT ❗️❗️\n\n"
-                f"ᴛʜᴇsᴇ ꜰɪʟᴇs ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ɪɴ {get_time(delete_time)}.\n"
-                f"ᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ᴛʜᴇᴍ ᴛᴏ sᴀᴠᴇᴅ ᴍᴇssᴀɢᴇs.</b>",
-                parse_mode=enums.ParseMode.HTML
-            )
-
-            asyncio.create_task(
-                auto_delete_messages(client, sent_msgs, warn, delete_time)
-	        )
         except Exception as e:
             print("Multi send error:", e)
 
