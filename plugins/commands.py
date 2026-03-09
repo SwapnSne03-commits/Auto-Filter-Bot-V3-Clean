@@ -6,6 +6,7 @@ import random
 import asyncio
 import time
 import pytz
+import uuid
 from logging_helper import LOGGER
 from .pm_filter import auto_filter 
 from Script import script
@@ -252,7 +253,7 @@ async def send_file_pipeline(client, query, file_id, grp_id):
     try:
         DELETE_TIME = int(DELETE_TIME or AUTO_DELETE_TIME)
 
-        cache_key = f"{user_id}_{int(time.time())}"
+        cache_key = f"{user_id}_{uuid.uuid4().hex}"
         cache = temp.AUTO_DELETE_CACHE.setdefault(cache_key, {
             "messages": [],
             "warn": None,
