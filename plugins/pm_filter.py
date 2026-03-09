@@ -3166,7 +3166,6 @@ async def cb_handler(client: Client, query: CallbackQuery):
 			
         
 async def auto_filter(client, msg, spoll=False):
-    temp.PAGE_STATE[key] = {"current_offset": 0}
 
     chat_id = msg.chat.id
     settings = await get_settings(chat_id)
@@ -3193,6 +3192,7 @@ async def auto_filter(client, msg, spoll=False):
         return
     key = f"{message.chat.id}-{message.reply_to_message.id if message.reply_to_message else message.id}"
 
+    temp.PAGE_STATE[key] = {"current_offset": 0}
     # reset multi select session
     temp.MULTI_SELECT.pop(key, None)
     temp.MULTI_FILES.pop(key, None)
