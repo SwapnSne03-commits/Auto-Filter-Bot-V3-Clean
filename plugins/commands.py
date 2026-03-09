@@ -174,14 +174,14 @@ async def delete_warn(msg, delete_time):
     except:
         pass
 
-async def process_auto_delete(client, user_id):
+async def process_auto_delete(client, cache_key):
 
     cache = temp.AUTO_DELETE_CACHE.get(cache_key)
     if not cache:
         return
 
     delete_time = cache["delete_time"]
-    warn = cache["warn"]
+    warn = cache.get("warn")
     messages = cache["messages"]
 
     await asyncio.sleep(delete_time)
@@ -192,13 +192,14 @@ async def process_auto_delete(client, user_id):
         except:
             pass
 
-    try:
-        await warn.edit_text(
-            "<b>ʏᴏᴜʀ ꜰɪʟᴇꜱ ʜᴀᴠᴇ ʙᴇᴇɴ ᴅᴇʟᴇᴛᴇᴅ.\nᴘʟᴇᴀꜱᴇ ꜱᴇᴀʀᴄʜ ᴀɢᴀɪɴ.</b>",
-            parse_mode=enums.ParseMode.HTML
-        )
-    except:
-        pass
+    if warn:
+        try:
+            await warn.edit_text(
+                "<b>ʏᴏᴜʀ ꜰɪʟᴇꜱ ʜᴀᴠᴇ ʙᴇᴇɴ ᴅᴇʟᴇᴛᴇᴅ.\nᴘʟᴇᴀꜱᴇ ꜱᴇᴀʀᴄʜ ᴀɢᴀɪɴ.</b>",
+                parse_mode=enums.ParseMode.HTML
+            )
+        except:
+            pass
 
     temp.AUTO_DELETE_CACHE.pop(cache_key, None)
 
@@ -296,7 +297,7 @@ async def send_file_pipeline(client, query, file_id, grp_id):
         if cache["task"] is None:
 
             cache["task"] = asyncio.create_task(
-                process_auto_delete(client, user_id)
+                process_auto_delete(client, cache_key)
             )
 
         return msg, DELETE_TIME
