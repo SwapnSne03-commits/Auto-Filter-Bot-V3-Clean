@@ -167,6 +167,13 @@ async def auto_delete_messages(client, messages, notice_msg, delete_time):
     except:
         pass
 
+async def delete_warn(msg, delete_time):
+    await asyncio.sleep(delete_time)
+    try:
+        await msg.delete()
+    except:
+        pass
+
 async def process_auto_delete(client, user_id):
 
     cache = temp.AUTO_DELETE_CACHE.get(cache_key)
@@ -262,19 +269,19 @@ async def send_file_pipeline(client, query, file_id, grp_id):
         })
 
         # warning message
-        if cache["warn"] is None:
+        #if cache["warn"] is None:
 
-            user_name = query.from_user.first_name if hasattr(query, "from_user") else "User"
-            user_mention = f'<a href="tg://user?id={user_id}">{user_name}</a>'
-            warn = await client.send_message(
-                user_id,
-                f"<b>👋 ʜᴇʏ {user_mention},</b>\n\n"
-                f"<b>ᴀʟʟ sᴇɴᴅᴇᴅ ꜰɪʟᴇs ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ᴀғᴛᴇʀ {get_time(DELETE_TIME)}.</b>\n"
-                f"<b>ᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ɪᴛ ᴛᴏ ʏᴏᴜʀ sᴀᴠᴇᴅ ᴍᴇssᴀɢᴇs ᴀɴᴅ sᴛᴀʀᴛ ᴅᴏᴡɴʟᴏᴀᴅ ᴛʜᴇʀᴇ!!</b>",
-                parse_mode=enums.ParseMode.HTML
-            )
+            #user_name = query.from_user.first_name if hasattr(query, "from_user") else "User"
+            #user_mention = f'<a href="tg://user?id={user_id}">{user_name}</a>'
+            #warn = await client.send_message(
+                #user_id,
+                #f"<b>👋 ʜᴇʏ {user_mention},</b>\n\n"
+                #f"<b>ᴀʟʟ sᴇɴᴅᴇᴅ ꜰɪʟᴇs ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ᴀғᴛᴇʀ {get_time(DELETE_TIME)}.</b>\n"
+                #f"<b>ᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ɪᴛ ᴛᴏ ʏᴏᴜʀ sᴀᴠᴇᴅ ᴍᴇssᴀɢᴇs ᴀɴᴅ sᴛᴀʀᴛ ᴅᴏᴡɴʟᴏᴀᴅ ᴛʜᴇʀᴇ!!</b>",
+                #parse_mode=enums.ParseMode.HTML
+            #)
 
-            cache["warn"] = warn
+            #cache["warn"] = warn
 
         msg = await client.send_cached_media(
             chat_id=user_id,
@@ -414,6 +421,22 @@ async def start(client, message):
         )
 
         await asyncio.sleep(1)
+
+        user_name = message.from_user.first_name
+        user_mention = f'<a href="tg://user?id={user_id}">{user_name}</a>'
+        warn = await message.reply_text(
+            f"<b>👋 ʜᴇʏ {user_mention},</b>\n\n"
+            f"<b>ᴀʟʟ sᴇɴᴅᴇᴅ ꜰɪʟᴇs ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ᴀғᴛᴇʀ {get_time(DELETE_TIME)}.</b>\n"
+            f"<b>ᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ɪᴛ ᴛᴏ ʏᴏᴜʀ sᴀᴠᴇᴅ ᴍᴇssᴀɢᴇs ᴀɴᴅ sᴛᴀʀᴛ ᴅᴏᴡɴʟᴏᴀᴅ ᴛʜᴇʀᴇ!!</b>",
+            parse_mode=enums.ParseMode.HTML
+        )
+        asyncio.create_task(delete_warn(warn, DELETE_TIME))
+
+        # sending message remove
+        try:
+            await msg.delete()
+        except:
+            pass
 
         sent_msgs = []
         delete_time = None
