@@ -269,6 +269,8 @@ async def next_page(bot, query):
             offset = int(offset)
         except:
             offset = 0
+        temp.PAGE_STATE[key] = {"current_offset": offset}
+
         if BUTTONS.get(key)!=None:
             search = BUTTONS.get(key)
         else:
@@ -359,11 +361,11 @@ async def next_page(bot, query):
             if combined_files:
                 btn.insert(1, [
                     InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"fc#{key}#0"),
-                    InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#{offset}")
+                    InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#{temp.PAGE_STATE.get(key, {}).get('current_offset', 0)}")
                 ])
             else:
                 btn.insert(1, [
-                    InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#{offset}")
+                    InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#{temp.PAGE_STATE.get(key, {}).get('current_offset', 0)}")
                 ])       
         else:
             combined_files = temp.SMART_FILTERS.get(key, {}).get("combined") or []
@@ -382,11 +384,11 @@ async def next_page(bot, query):
             if combined_files:
                 btn.insert(1, [
                     InlineKeyboardButton("ᴄᴏᴍʙɪɴᴇᴅ", callback_data=f"fc#{key}#0"),
-                    InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#{offset}")
+                    InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#{temp.PAGE_STATE.get(key, {}).get('current_offset', 0)}")
                 ])
             else:
                 btn.insert(1, [
-                    InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#{offset}")
+                    InlineKeyboardButton("ꜱᴇʟᴇᴄᴛ ᴍᴜʟᴛɪ", callback_data=f"ms#{key}#{temp.PAGE_STATE.get(key, {}).get('current_offset', 0)}")
                 ])
             
         try:
@@ -498,6 +500,9 @@ async def next_page(bot, query):
 async def start_multi_select(client, query):
 
     _, key, offset = query.data.split("#")
+
+    if key not in temp.PAGE_STATE:
+        temp.PAGE_STATE[key] = {"current_offset": 0}
 
     try:
         offset = int(offset)
