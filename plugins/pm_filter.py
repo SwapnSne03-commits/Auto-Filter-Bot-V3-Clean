@@ -792,7 +792,7 @@ async def restore_main_page(client, query, key):
     temp.MULTI_SELECT[key] = False
 
     # modify callback data same as back button
-	original_data = query.data
+    original_data = query.data
     query.data = f"fl#homepage#{key}#0"
 
     # call same handler used by "Back to main page"
