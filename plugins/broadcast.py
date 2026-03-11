@@ -24,10 +24,10 @@ from utils import (
 # ⚙️ GLOBAL SAFE SETTINGS (Koyeb Free Optimized)
 # =====================================================
 
-MIN_BATCH = 8
-MAX_BATCH = 35
+MIN_BATCH = 15
+MAX_BATCH = 50
 RETRY_LIMIT = 2
-DELAY = 0.02
+DELAY = 0.01
 
 lock = asyncio.Lock()
 
@@ -37,12 +37,12 @@ lock = asyncio.Lock()
 # =====================================================
 
 def auto_batch_size(total):
-    if total < 1500:
+    if total < 2000:
+        return 45
+    elif total < 8000:
         return 30
-    elif total < 5000:
-        return 22
     else:
-        return 15
+        return 25
 
 
 # =====================================================
@@ -64,10 +64,13 @@ async def safe_user_send(uid, msg, is_pin):
         try:
             _, res = await users_broadcast(uid, msg, is_pin)
             return res
+
         except FloodWait as e:
             await asyncio.sleep(e.value)
+
         except Exception:
             await asyncio.sleep(1)
+
     return "Error"
 
 
@@ -151,7 +154,7 @@ async def broadcast_users(bot, message):
 
             if len(tasks) >= batch_size:
 
-                results = await asyncio.gather(*tasks)
+                results = await asyncio.gather(*tasks, return_exceptions=True)
                 tasks.clear()
 
                 for r in results:
@@ -225,6 +228,7 @@ async def broadcast_groups(bot, message):
     async with lock:
 
         tasks = []
+        edit_counter = 0
 
         async for chat in cursor:
 
@@ -239,6 +243,8 @@ async def broadcast_groups(bot, message):
                 results = await asyncio.gather(*tasks, return_exceptions=True)
                 tasks.clear()
 
+                edit_counter += 1
+
                 for r in results:
                     if r == "Success":
                         success += 1
@@ -249,10 +255,21 @@ async def broadcast_groups(bot, message):
 
                 await asyncio.sleep(DELAY)
 
-                bar = progress_bar(done, total)
+                if edit_counter % 3 == 0:
+                    bar = progress_bar(done, total)
 
-                await status.edit(f"📣 Group Broadcast\n\n{bar}\n{done}/{total}")
+                    await status.edit(f"📣 Group Broadcast\n\n{bar}\n{done}/{total}")
 
+        if tasks:
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+
+            for r in results:
+                if r == "Success":
+                    success += 1
+                else:
+                    failed += 1
+
+            done += len(results)
     elapsed = get_readable_time(time.time() - start)
 
     await status.edit(
