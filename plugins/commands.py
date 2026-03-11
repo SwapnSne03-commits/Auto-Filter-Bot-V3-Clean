@@ -1614,11 +1614,33 @@ async def set_maintenance_mode(client, message):
         
 
 @Client.on_message(filters.command("restart") & filters.user(ADMINS))
-async def stop_button(bot, message):
-    msg = await bot.send_message(text="<b><i>ʙᴏᴛ ɪꜱ ʀᴇꜱᴛᴀʀᴛɪɴɢ</i></b>", chat_id=message.chat.id)       
-    await asyncio.sleep(3)
-    await msg.edit("<b><i><u>ʙᴏᴛ ɪꜱ ʀᴇꜱᴛᴀʀᴛᴇᴅ</u> ✅</i></b>")
-    os.execl(sys.executable, sys.executable, *sys.argv)
+async def restart_bot(client, message):
+
+    msg = await message.reply_text(
+        "<b>🔄 Restarting Bot...</b>"
+    )
+
+    # small delay
+    await asyncio.sleep(2)
+
+    # clear runtime cache (optional but recommended)
+    try:
+        temp.PAGE_STATE.clear()
+        temp.MULTI_FILES.clear()
+        temp.MULTI_SELECT.clear()
+        temp.AUTO_DELETE_CACHE.clear()
+    except:
+        pass
+
+    try:
+        await msg.edit_text(
+            "<b>✅ Bot Restarted Successfully!</b>"
+        )
+    except:
+        pass
+
+    # restart process
+    os.execv(sys.executable, ["python"] + sys.argv)
 
 
 @Client.on_message(filters.command("reset_group"))
