@@ -61,33 +61,41 @@ class temp(object):
     MULTI_FILES = {}    # key -> set(file_ids)
     SESSION_TIME = {}
     PENDING_MULTI = {}
+    PAGE_STATE = {}
+    SMART_FILTERS = {}
 
 async def auto_memory_cleaner():
 
     while True:
 
-        await asyncio.sleep(600)  # run every 10 min
+        await asyncio.sleep(600)  # every 10 min
 
         now = time.time()
 
-        expired = []
-
-        for key, ts in temp.SESSION_TIME.items():
+        for key, ts in list(temp.SESSION_TIME.items()):
 
             if now - ts > 1800:  # 30 min expiry
-                expired.append(key)
 
-        for key in expired:
+                temp.GETALL.pop(key, None)
+                temp.MULTI_FILES.pop(key, None)
+                temp.MULTI_SELECT.pop(key, None)
+                temp.ACTIVE_FILTER.pop(key, None)
+                temp.PAGE_STATE.pop(key, None)
+                temp.SMART_FILTERS.pop(key, None)
+                temp.SESSION_TIME.pop(key, None)
+                temp.FILTER_FILES.pop(key, None)
+                temp.PENDING_MULTI.pop(key, None)
 
-            temp.GETALL.pop(key, None)
-            temp.MULTI_FILES.pop(key, None)
-            temp.MULTI_SELECT.pop(key, None)
-            temp.ACTIVE_FILTER.pop(key, None)
-            temp.PAGE_STATE.pop(key, None)
-            temp.SMART_FILTERS.pop(key, None)
-            temp.SESSION_TIME.pop(key, None)
-            temp.FILTER_FILES.pop(key, None)
-            temp.PENDING_MULTI.clear()
+        # RAM safety
+        ram = psutil.virtual_memory().percent
+
+        if ram > 80:
+            temp.GETALL.clear()
+            temp.FILTER_FILES.clear()
+            temp.PAGE_STATE.clear()
+            temp.SMART_FILTERS.clear()
+
+        gc.collect()
 
 def today_date():
     return datetime.now().strftime("%Y-%m-%d")
