@@ -321,7 +321,13 @@ async def next_page(bot, query):
 
         else:
             # 🔹 NORMAL HOMEPAGE PAGINATION MODE (use stored results)
-            all_files = temp.GETALL.get(key) or files
+            all_files = temp.GETALL.get(key)
+
+            if not all_files:
+                return await query.answer(
+                    "⚠️ Session expired. Please search again.",
+                    show_alert=True
+		        )
 
             total = len(all_files)
             files = all_files[offset: offset + per_page]
