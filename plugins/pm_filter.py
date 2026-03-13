@@ -3170,8 +3170,26 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 parse_mode=enums.ParseMode.HTML 
             )
 			
-        
+async def delete_msg(msg, time, user_msg=None):
+    await asyncio.sleep(time)
+    try:
+        await msg.delete()
+        if user_msg:
+            await user_msg.delete()
+    except:
+        pass
+
 async def auto_filter(client, msg, spoll=False):
+
+    query = (msg.text or "").strip()
+
+    if not re.match(r"^[a-zA-Z0-9\s\-\.\']+$", query):
+        warn = await msg.reply_text(
+            "📌 <b>ᴘʟᴇᴀsᴇ sᴇᴀʀᴄʜ ᴜsɪɴɢ ɴᴏʀᴍᴀʟ ᴇɴɢʟɪsʜ ʟᴇᴛᴛᴇʀs.</b>",
+            parse_mode="html"
+		)
+        asyncio.create_task(delete_msg(warn, 8, msg))
+        return 
 
     chat_id = msg.chat.id
     settings = await get_settings(chat_id)
