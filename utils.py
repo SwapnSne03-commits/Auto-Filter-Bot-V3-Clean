@@ -87,13 +87,16 @@ async def auto_memory_cleaner():
                 temp.PENDING_MULTI.pop(key, None)
 
         # RAM safety
-        ram = psutil.virtual_memory().percent
+        #ram = psutil.virtual_memory().percent
+        #👇check only bot ram use
+        ram = psutil.Process().memory_percent()
 
-        if ram > 80:
+        if ram > 60:
             temp.GETALL.clear()
             temp.FILTER_FILES.clear()
             temp.PAGE_STATE.clear()
             temp.SMART_FILTERS.clear()
+            temp.MULTI_FILES.clear()
 
         gc.collect()
 
@@ -360,36 +363,33 @@ async def get_poster(query, bulk=False, id=False, file=None):
             return data if isinstance(data, dict) else None
         
         movie_list = search_result.titles[:MAX_LIST_ELM]
-        ALLOWED_KINDS = (
-            "movie",
-            "tv series",
-            "tvseries",
-            "tvminiseries",
-            "tvmovie",
-                ) # 🔥 ALLOWED MAIN CONTENT ONLY (NO DOCUMENTARY / SPECIAL)
+        #ALLOWED_KINDS = (
+            #"movie",
+            #"tv series",
+            #"tvseries",
+            #"tvminiseries",
+            #"tvmovie",
+                #) # 🔥 ALLOWED MAIN CONTENT ONLY (NO DOCUMENTARY / SPECIAL)
         # 🔥 documentary / special বাদ
-        movie_list = [
-            m for m in movie_list
-            if getattr(m, "kind", "").lower() in ALLOWED_KINDS
-        ]
+        #movie_list = [
+            #m for m in movie_list
+            #if getattr(m, "kind", "").lower() in ALLOWED_KINDS
+        #]
 
         # 🛟 যদি শুধু documentary থাকে
-        if not movie_list:
-            LOGGER.info(f"Only documentary/special found, fallback to TMDB: {title}")
-            data = await fetch_tmdb_data(title, year_val)
-            return data if isinstance(data, dict) else None
+        #if not movie_list:
+            #LOGGER.info(f"Only documentary/special found, fallback to TMDB: {title}")
+            #data = await fetch_tmdb_data(title, year_val)
+            #return data if isinstance(data, dict) else None
         if year_val:
-            filtered = [m for m in movie_list if m.year and str(m.year) == str(year_val)]
+            filtered = [m for m in movie_list if getattr(m, "year", None) and str(m.year) == str(year_val)]
             if not filtered:
                 filtered = movie_list
         else:
             filtered = movie_list
             
-        kind_filter = ['movie', 'tv series', 'tvSeries', 'tvMiniSeries', 'tvMovie']
-        filtered_kind = [m for m in filtered if m.kind and m.kind in kind_filter]
-        
-        if not filtered_kind:
-            filtered_kind = filtered
+        #kind_filter = ['movie', 'tv series', 'tvSeries', 'tvMiniSeries', 'tvMovie']
+        filtered_kind = filtered
         
         if bulk:
             return filtered_kind[:MAX_LIST_ELM]
