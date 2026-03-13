@@ -3186,7 +3186,7 @@ async def auto_filter(client, msg, spoll=False):
     if not re.match(r"^[a-zA-Z0-9\s\-\.\']+$", query):
         warn = await msg.reply_text(
             "📌 <b>ᴘʟᴇᴀsᴇ sᴇᴀʀᴄʜ ᴜsɪɴɢ ɴᴏʀᴍᴀʟ ᴇɴɢʟɪsʜ ʟᴇᴛᴛᴇʀs.</b>",
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
 		)
         asyncio.create_task(delete_msg(warn, 8, msg))
         return 
