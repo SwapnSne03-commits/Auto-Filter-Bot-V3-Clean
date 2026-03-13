@@ -66,9 +66,13 @@ class temp(object):
 
 async def auto_memory_cleaner():
 
+    LOGGER.info("Memory Cleaner Started")
+
     while True:
 
         await asyncio.sleep(600)  # every 10 min
+
+        LOGGER.info("Memory Cleaner Cycle Running")
 
         now = time.time()
 
