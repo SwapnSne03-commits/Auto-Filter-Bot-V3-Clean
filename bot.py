@@ -43,8 +43,8 @@ if URL:
 async def SilentXBotz_start():
     LOGGER.info('Initializing Your Bot!')
     await SilentX.start()
-    asyncio.create_task(auto_memory_cleaner())
     bot_info = await SilentX.get_me()
+    asyncio.create_task(auto_memory_cleaner())
     SilentX.username = bot_info.username
     await initialize_clients()
     if 0 in SilentX.dispatcher.groups:
