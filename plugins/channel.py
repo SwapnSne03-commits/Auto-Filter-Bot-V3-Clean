@@ -23,6 +23,22 @@ CAPTION_LANGUAGES = [
     "Russian","Japanese","Odia","Assamese","Urdu"
 ]
 
+FORMAT_KEYWORDS = [
+    "WEB-DL",
+    "WEBRip",
+    "HDRip",
+    "BluRay",
+    "BRRip",
+    "BDRip",
+    "CAMRip",
+    "HDCAM",
+    "HDTC",
+    "DVDRip",
+    "DVDScr",
+    "PreDVD",
+    "HQ"
+]
+
 DEFAULT_IMAGE_URL = "https://te.legra.ph/file/88d845b4f8a024a71465d.jpg"
 
 media_filter = filters.document | filters.video | filters.audio
@@ -61,6 +77,16 @@ def get_cache(key):
         }
 
     return CACHE[key]
+
+def detect_format(text):
+
+    for fmt in FORMAT_KEYWORDS:
+
+        if fmt.lower() in text.lower():
+
+            return fmt
+
+    return "WEBRip"
 
 def add_episode(cache, season, episode, combined):
 
@@ -380,6 +406,8 @@ async def send_movie_update(bot, file_name, caption):
 
         languages = detect_languages(text)
 
+        fmt = detect_format(text)
+
         cache = get_cache(file_name)
 
         if season:
@@ -416,15 +444,9 @@ async def send_movie_update(bot, file_name, caption):
 
         quality_text = ", ".join(sorted(cache["qualities"])) or "720p"
 
-        lang_text = ", ".join(sorted(set(languages)))
-
-        if cache["combined"]:
-
-            episode_text = "COMBINED"
-
-        else:
-
-            season_text = build_season_text(cache["seasons"])
+        cache["languages"].update(languages)
+        lang_text = ", ".join(sorted(cache["languages"]))
+        season_text = build_season_text(cache["seasons"])
 
         if season:
 
@@ -433,11 +455,11 @@ async def send_movie_update(bot, file_name, caption):
 
 🏷 <b>Title</b> : {tmdb.get("title", file_name)} #SERIES
 
-📌 <b>Format</b> : WEBRip
+📌 <b>Format</b> : {fmt}
 🍃 <b>Quality</b> : {quality_text}
 🔊 <b>Audio</b> : {lang_text}
 
-☀ <b>{season_text}
+☀{season_text}
 """
 
         else:
@@ -447,7 +469,7 @@ async def send_movie_update(bot, file_name, caption):
 
 🏷 <b>Title</b> : {tmdb.get("title", file_name)} #MOVIE
 
-📌 <b>Format</b> : WEBRip
+📌 <b>Format</b> : {fmt}
 🍃 <b>Quality</b> : {quality_text}
 🔊 <b>Audio</b> : {lang_text}
 """
