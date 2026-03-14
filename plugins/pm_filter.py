@@ -2326,12 +2326,20 @@ async def cb_handler(client: Client, query: CallbackQuery):
         settings = await get_settings(query.message.chat.id)
         if CUSTOM_FILE_CAPTION:
             try:
-                f_caption = CUSTOM_FILE_CAPTION.format(file_name='' if title is None else title,
-                                                       file_size='' if size is None else size,
-                                                       file_caption='' if f_caption is None else f_caption)
+
+                original_caption = f_caption
+                fallback_caption = original_caption if original_caption else title
+
+                metadata = build_metadata(title, fallback_caption)
+
+                f_caption = CUSTOM_FILE_CAPTION.format(
+                    file_name='' if title is None else title,
+                    file_size='' if size is None else size,
+                    file_caption='' if fallback_caption is None else fallback_caption,
+                    metadata=metadata
+                )
             except Exception as e:
                 LOGGER.error(e)
-            f_caption = f_caption
         if f_caption is None:
             f_caption = f"{files.file_name}"
         await query.answer(url=f"https://telegram.me/{temp.U_NAME}?start=file_{file_id}")
