@@ -46,10 +46,22 @@ async def get_main_settings_text(grp_id, title):
     verify_text = "ᴏɴ" if verify_status else "ᴏꜰꜰ"
     log_channel = settings.get('log')   
     log_text = f"<code>{log_channel}</code>" if log_channel else "ɴᴏᴛ ꜱᴇᴛ"
-    fsub_ids = settings.get('fsub_id')
-    req_fsub_id = settings.get('req_fsub_id')
+    fsub_ids = settings.get('fsub_id') or []
+    if not isinstance(fsub_ids, list):
+        fsub_ids = [fsub_ids]
+
+    # remove duplicates
+    fsub_ids = list(dict.fromkeys(fsub_ids))
+    req_fsub_id = settings.get('req_fsub_id') or []
+
+    if not isinstance(req_fsub_id, list):
+        req_fsub_id = [req_fsub_id]
+
+    # remove duplicates
+    req_fsub_id = list(dict.fromkeys(req_fsub_id))
+
     if req_fsub_id:
-        req_text = f"<code>{req_fsub_id}</code>"
+        req_text = ", ".join([f"<code>{cid}</code>" for cid in req_fsub_id])
     else:
         req_text = "ɴᴏᴛ ꜱᴇᴛ"
     if fsub_ids:
