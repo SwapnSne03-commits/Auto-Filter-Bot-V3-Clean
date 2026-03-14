@@ -484,7 +484,7 @@ async def send_with_visual(bot, caption, tmdb_data, key):
 
     try:
 
-        cache = CACHE[key]
+        cache = get_cache(key)
 
         visual_url = await get_best_visual(tmdb_data)
 
