@@ -96,6 +96,25 @@ SUBTITLE_PATTERNS = {
     "MSubs": ["msub", "msubs", "multi sub", "multi subs"]
 }
 
+def extract_quality(text):
+
+    if not text:
+        return ""
+
+    text = text.lower()
+
+    patterns = [
+        r"2160p", r"1440p", r"1080p", r"720p", r"480p", r"360p",
+        r"4k", r"hdrip", r"webrip", r"webdl", r"bluray", r"brrip", r"dvdrip"
+    ]
+
+    for p in patterns:
+        m = re.search(rf"\b{p}\b", text)
+        if m:
+            return m.group(0).upper()
+
+    return ""
+
 def extract_subtitles(text):
 
     if not text:
@@ -103,21 +122,30 @@ def extract_subtitles(text):
 
     text = text.lower()
 
-    for sub, patterns in SUBTITLE_PATTERNS.items():
-        for p in patterns:
-            if p in text:
-                return sub
+    subs_patterns = {
+        "Esubs": ["esub", "esubs", "eng sub", "english sub"],
+        "Msubs": ["msub", "msubs", "multi sub", "multi subs"]
+    }
+
+    for label, keys in subs_patterns.items():
+        for k in keys:
+            if k in text:
+                return label
 
     return ""
 
 def build_metadata(title, caption):
 
-    text_data = f"{title} {caption}"
+    text = f"{title} {caption}"
 
-    language = extract_languages(text_data)
-    subs = extract_subtitles(text_data)
+    quality = extract_quality(text)
+    language = extract_languages(text)
+    subs = extract_subtitles(text)
 
     parts = []
+
+    if quality:
+        parts.append(quality)
 
     if language:
         parts.append(language)
@@ -125,8 +153,10 @@ def build_metadata(title, caption):
     if subs:
         parts.append(subs)
 
-    return " | ".join(parts)
+    if not parts:
+        return ""
 
+    return " | ".join(parts)
 
 def human_size(size):
     for unit in ["B", "KB", "MB", "GB", "TB"]:
