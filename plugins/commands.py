@@ -70,7 +70,10 @@ def extract_languages(text):
     if not text:
         return ""
 
+    # normalize
     text = text.lower()
+    text = re.sub(r"[._\-]", " ", text)
+
     found = []
 
     for lang, keys in LANGUAGE_PATTERNS.items():
@@ -79,7 +82,12 @@ def extract_languages(text):
                 found.append(lang)
                 break
 
+    # remove duplicates
     found = list(dict.fromkeys(found))
+
+    # remove "Dual Audio" if real languages exist
+    if len(found) > 1 and "Dual Audio" in found:
+        found.remove("Dual Audio")
 
     return ", ".join(found)
 
