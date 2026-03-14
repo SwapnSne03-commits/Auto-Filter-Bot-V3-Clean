@@ -496,14 +496,15 @@ async def media(bot, message):
 
     media.file_type = t
 
-    media.caption = message.caption
+    media.caption = message.caption or ""
 
-    success,_ = await save_file(media)
+    success, silentxbotz = await save_file(media)
 
-    if success and await get_status(bot.me.id):
+    if success and silentxbotz == 1 and await get_status(bot.me.id):
 
         await send_movie_update(
             bot,
             media.file_name,
             media.caption
         )
+
