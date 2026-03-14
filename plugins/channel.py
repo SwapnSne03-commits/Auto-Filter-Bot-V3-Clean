@@ -500,7 +500,7 @@ async def media(bot, message):
 
     success, silentxbotz = await save_file(media)
 
-    if success and silentxbotz == 1 and await get_status(bot.me.id):
+    if success and silentxbotz == 1:
 
         await send_movie_update(
             bot,
