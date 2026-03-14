@@ -57,6 +57,36 @@ SILENTX_PREMIUM_UPDATE = """
 <b>⚡ Powered By @Graduate_Movies</b>
 """
 
+SERIES_UPDATE_TEMPLATE = """
+📌 <b>NEW FILES ADDED</b>
+
+🏷 <b>Title</b> : {} #SERIES
+
+📍 <b>Format</b> : {}
+🌿 <b>Quality</b> : {}
+🔊 <b>Audio</b> : {}
+
+📅 <b>Year</b> : {}
+☀ <b>Season</b> : {:02}
+💎 <b>Episodes</b> : {}
+
+⚡ <b>Powered By</b> @Graduate_Movies
+"""
+
+MOVIE_UPDATE_TEMPLATE = """
+📌 <b>NEW FILES ADDED</b>
+
+🏷 <b>Title</b> : {} #MOVIE
+
+📍 <b>Format</b> : {}
+🌿 <b>Quality</b> : {}
+🔊 <b>Audio</b> : {}
+
+📅 <b>Year</b> : {}
+
+⚡ <b>Powered By</b> @Graduate_Movies
+"""
+
 notified_movies = set()
 media_filter = filters.document | filters.video | filters.audio
 
@@ -235,18 +265,21 @@ def build_season_text(seasons, combined):
 
     for season in sorted(all_seasons):
 
-        if season in combined:
-            lines.append(f"☀ <b>Season {season:02}</b> : COMBINED")
-            continue
-
         eps = seasons.get(season, set())
-
-        if not eps:
-            continue
 
         ep_text = build_episode_range(eps)
 
-        lines.append(f"☀ <b>Season {season:02}</b> : {ep_text}")
+        if season in combined:
+
+            if ep_text:
+                lines.append(f"☀ <b>Season {season:02}</b> : {ep_text} + COMBINED")
+            else:
+                lines.append(f"☀ <b>Season {season:02}</b> : COMBINED")
+
+        else:
+
+            if ep_text:
+                lines.append(f"☀ <b>Season {season:02}</b> : {ep_text}")
 
     return "\n".join(lines)
 
@@ -280,7 +313,7 @@ async def media(bot, message):
     else:
         return
     media.file_type = file_type
-    media.caption = message.caption
+    media.caption = message.caption or ""
     success, silentxbotz = await save_file(media)
     try:  
         if success and silentxbotz == 1 and await get_status(bot.me.id):            
@@ -293,9 +326,9 @@ async def send_movie_update(bot, file_name, caption):
     try:
 
         file_name = await movie_name_format(file_name)        
-        caption = await movie_name_format(caption)
+        caption = caption or ""
 
-        year_match = re.search(r"\b(19|20)\d{2}\b", caption)
+        year_match = re.search(r"\b(19|20)\d{2}\b", f"{file_name} {caption}")
         year = year_match.group(0) if year_match else None
 
         episode = detect_episode(f"{file_name} {caption}")
@@ -310,9 +343,6 @@ async def send_movie_update(bot, file_name, caption):
 
         # episode store
         season = detect_season(f"{file_name} {caption}")
-
-        if combined and season:
-            cache["combined"].add(season)
 
         if season:
 
@@ -349,11 +379,6 @@ async def send_movie_update(bot, file_name, caption):
 
         fmt = await detect_format(f"{file_name} {caption}")
 
-        if file_name in notified_movies:
-            return
-
-        notified_movies.add(file_name)
-
         tmdb_data = await fetch_tmdb_data(file_name, year)
 
         if not tmdb_data:
@@ -364,20 +389,36 @@ async def send_movie_update(bot, file_name, caption):
         quality_text = ", ".join(sorted(cache["qualities"])) or pixel
         lang_text = ", ".join(sorted(cache["languages"])) or language
 
+        is_series = "tv" in tmdb_data.get("kind","").lower() or season_text
+
+        year_text = tmdb_data.get("release_date","")
+        year_text = year_text[:4] if year_text else "N/A"
+
         search_movie = file_name.replace(" ", "-")
 
-        full_caption = SILENTX_PREMIUM_UPDATE.format(
-            escape_html(tmdb_data["title"]),
-            tmdb_data["kind"],
-            escape_html(lang_text),
-            fmt,
-            season_text if season_text else "N/A"
-            escape_html(tmdb_data["director"] or "N/A"),
-            escape_html(tmdb_data["release_date"] or "TBA"),
-            tmdb_data["vote_average"],
-            tmdb_data["vote_count"],
-            escape_html(", ".join(tmdb_data["genres"][:3]))
-        )
+        if is_series and season_text:
+
+            season_num = sorted(cache["seasons"].keys())[0] if cache["seasons"] else 1
+
+            full_caption = SERIES_UPDATE_TEMPLATE.format(
+                escape_html(tmdb_data["title"]),
+                fmt,
+                quality_text,
+                lang_text,
+                year_text,
+                season_num,
+                season_text
+            )
+
+        else:
+
+            full_caption = MOVIE_UPDATE_TEMPLATE.format(
+                escape_html(tmdb_data["title"]),
+                fmt,
+                quality_text,
+                lang_text,
+                year_text,
+            )
 
         schedule_update(bot, file_name, full_caption, tmdb_data)
 
