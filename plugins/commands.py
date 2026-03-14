@@ -33,13 +33,99 @@ DEL_FILES_PER_PAGE = 10
 # 🔥 Words that should be removed from filename/caption
 REMOVED_SPC_WORD = ["[SANKET]", "moviesmod", "HDWebMovies", "Telegram", "TG", "www.", "hdholly", "hdmovie2.productions", "twn4all", "hdmovie2", "ott_downloader_bot", "bollyflix", "[~ᴍᴋ™~]", "ExtraFlix.pw", "hdhub4u", "skymovieshd", "@Eliteflix", "t.me", "4kdbhub", "movies4u", "tw4all", "Hdhub4u", "cinevood", "skymoviedHD", "4khdhub", "Toonworld4all", "TW4ALL", "ExtraFlix", "Hdhub", "Movies4u", "movies4u", "Vegamovies", "extraflix", "Filmy4wap", "Filmu4cab", "Tamilmv", "CineVood", "Hub4u", "Hub4", "SkymoviesHD", "Skymovieshd", "telegram", "tg", "TG", "Telegram", "HdWebMovies", "mkvcinemas", "mkvCinemas", "mkvking", "5moviez", "hdm2", "mkvcinema", "1tamil", "1tamilmv", "1Tamil", "1tamilblaster", "1TamilBlaster", "Moviez", "moviez", "yts mx", "YTS", "YTS MX", "mkvCinem", "filmyzilla", "filmzilla", "CineVood", "BT MOVIES HD", "FILMSCLUB04", "XDMovies", "mp4movies", "mp4moviez", "MLWBD", "MLSBD", "mlsbd", "mlwbd", "FibWatch", "fibwatch", "Joya9tv", "joya9tv", "Cinedoze", "CineDoze", "cinedoze", "world4u", "SSRMovies", "SSRmovies", "5MovieRulz", "FilmyCab", "hdweb", "RymOfficial", "(Mᴏᴏɴ Kɴɪɢʜᴛ)", "mkvanime"] #[remove words form file name]
 
+LANGUAGE_PATTERNS = {
+
+    "English": ["eng", "english"],
+    "Hindi": ["hin", "hindi"],
+    "Bengali": ["ben", "bangla", "bengali"],
+    "Tamil": ["tam", "tamil"],
+    "Telugu": ["tel", "telugu"],
+    "Malayalam": ["mal", "malayalam"],
+    "Kannada": ["kan", "kannada"],
+    "Marathi": ["mar", "marathi"],
+    "Punjabi": ["pun", "punjabi"],
+    "Gujarati": ["guj", "gujarati"],
+    "Urdu": ["urdu"],
+
+    "Spanish": ["spa", "spanish"],
+    "French": ["fre", "french"],
+    "German": ["ger", "german"],
+    "Italian": ["ita", "italian"],
+    "Portuguese": ["por", "portuguese"],
+    "Russian": ["rus", "russian"],
+
+    "Japanese": ["jap", "japanese"],
+    "Korean": ["kor", "korean"],
+    "Chinese": ["chi", "chinese", "mandarin"],
+    "Thai": ["thai"],
+    "Indonesian": ["indo", "indonesian"],
+    "Vietnamese": ["viet", "vietnamese"],
+
+    "Arabic": ["arabic"],
+    "Persian": ["persian", "farsi"],
+}
+
+def extract_languages(text):
+
+    if not text:
+        return ""
+
+    text = text.lower()
+    found = []
+
+    for lang, keys in LANGUAGE_PATTERNS.items():
+        for k in keys:
+            if re.search(rf"\b{re.escape(k)}\b", text):
+                found.append(lang)
+                break
+
+    found = list(dict.fromkeys(found))
+
+    return ", ".join(found)
+
+SUBTITLE_PATTERNS = {
+    "Esubs": ["esub", "esubs", "eng sub"],
+    "MSubs": ["msub", "msubs", "multi sub", "multi subs"]
+}
+
+def extract_subtitles(text):
+
+    if not text:
+        return ""
+
+    text = text.lower()
+
+    for sub, patterns in SUBTITLE_PATTERNS.items():
+        for p in patterns:
+            if p in text:
+                return sub
+
+    return ""
+
+def build_metadata(title, caption):
+
+    text_data = f"{title} {caption}"
+
+    language = extract_languages(text_data)
+    subs = extract_subtitles(text_data)
+
+    parts = []
+
+    if language:
+        parts.append(language)
+
+    if subs:
+        parts.append(subs)
+
+    return " | ".join(parts)
+
+
 def human_size(size):
     for unit in ["B", "KB", "MB", "GB", "TB"]:
         if size < 1024:
             return f"{size:.1f}{unit}"
         size /= 1024
     return "0B"
-
 
 def extract_file_info(name: str):
     name = name.lower()
@@ -757,7 +843,16 @@ async def start(client, message):
                 try:
                     original_caption = files1.caption
                     fallback_caption = original_caption if original_caption else title
-                    f_caption = SILENTX_CAPTION.format(file_name=title or "",file_size=size or "",file_caption=fallback_caption)
+                    metadata = build_metadata(title, fallback_caption)
+
+                    f_caption = SILENTX_CAPTION.format(
+                        file_name=title or "",
+                        file_size=size or "",
+                        file_caption=fallback_caption,
+                        language=extract_languages(f"{title} {fallback_caption}"),
+                        subs=extract_subtitles(f"{title} {fallback_caption}"),
+                        metadata=metadata
+                    )
                     # 🔥 FINAL caption user দেখবে → clean here
                     f_caption = clean_special_words(f_caption)
                 except Exception as e:
@@ -833,7 +928,16 @@ async def start(client, message):
             SILENTX_CAPTION = settings.get('caption', CUSTOM_FILE_CAPTION)
             if SILENTX_CAPTION:
                 try:
-                    f_caption=SILENTX_CAPTION.format(file_name= '' if title is None else title, file_size='' if size is None else size, file_caption='')
+                    metadata = build_metadata(title, fallback_caption)
+
+                    f_caption = SILENTX_CAPTION.format(
+                        file_name=title or "",
+                        file_size=size or "",
+                        file_caption=fallback_caption,
+                        language=extract_languages(f"{title} {fallback_caption}"),
+                        subs=extract_subtitles(f"{title} {fallback_caption}"),
+                        metadata=metadata
+                    )
                     f_caption = clean_special_words(f_caption)
                 except:
                     return
