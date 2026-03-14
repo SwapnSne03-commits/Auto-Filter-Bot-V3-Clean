@@ -147,23 +147,43 @@ async def open_settings_pm(client, query):
 
 @Client.on_callback_query(filters.regex(r'^grp_pm'))
 async def group_pm_settings(client, query):
+
     _, grp_id = query.data.split("#")
+
     user_id = query.from_user.id if query.from_user else None
+
     if user_id not in ADMINS:
         return await query.answer(
             "ᴏɴʟʏ ᴍʏ ᴀᴅᴍɪɴs ᴄᴀɴ ᴜsᴇ ᴛʜɪs..",
             show_alert=True
         )
+
     btn = await group_setting_buttons(int(grp_id))
+
     silentx = await client.get_chat(int(grp_id))
+
     text = await get_main_settings_text(int(grp_id), silentx.title)
+
+    # 🔹 Telegram message limit protection
+    if len(text) > 4000:
+        text = text[:4000] + "\n\n..."
+
     try:
-        await query.message.edit(text=text, reply_markup=InlineKeyboardMarkup(btn))
+        await query.message.edit(
+            text=text,
+            reply_markup=InlineKeyboardMarkup(btn)
+        )
+
     except FloodWait as e:
         await asyncio.sleep(e.value)
-        await query.message.edit(text=text, reply_markup=InlineKeyboardMarkup(btn))
+        await query.message.edit(
+            text=text,
+            reply_markup=InlineKeyboardMarkup(btn)
+        )
+
     except MessageNotModified:
         pass
+
 
 @Client.on_callback_query(filters.regex(r'^verification_setgs'))
 async def verification_settings(client, query):
