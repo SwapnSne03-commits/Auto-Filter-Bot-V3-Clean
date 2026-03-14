@@ -355,10 +355,13 @@ async def send_file_pipeline(client, query, file_id, grp_id):
             original_caption = files.caption
             fallback_caption = original_caption if original_caption else title
 
+            metadata = build_metadata(title, fallback_caption)
+
             f_caption = SILENTX_CAPTION.format(
                 file_name=title or "",
                 file_size=size or "",
-                file_caption=fallback_caption
+                file_caption=fallback_caption,
+                metadata=metadata
             )
 
             f_caption = clean_special_words(f_caption)
@@ -887,8 +890,6 @@ async def start(client, message):
                         file_name=title or "",
                         file_size=size or "",
                         file_caption=fallback_caption,
-                        language=extract_languages(f"{title} {fallback_caption}"),
-                        subs=extract_subtitles(f"{title} {fallback_caption}"),
                         metadata=metadata
                     )
                     # 🔥 FINAL caption user দেখবে → clean here
@@ -972,8 +973,6 @@ async def start(client, message):
                         file_name=title or "",
                         file_size=size or "",
                         file_caption=fallback_caption,
-                        language=extract_languages(f"{title} {fallback_caption}"),
-                        subs=extract_subtitles(f"{title} {fallback_caption}"),
                         metadata=metadata
                     )
                     f_caption = clean_special_words(f_caption)
@@ -1015,8 +1014,16 @@ async def start(client, message):
             original_caption = files.caption
             fallback_caption = original_caption if original_caption else title
 
-            f_caption = SILENTX_CAPTION.format(file_name=title or "",file_size=size or "",file_caption=fallback_caption)
+            #f_caption = SILENTX_CAPTION.format(file_name=title or "",file_size=size or "",file_caption=fallback_caption)
 
+            metadata = build_metadata(title, fallback_caption)
+
+            f_caption = SILENTX_CAPTION.format(
+                file_name=title or "",
+                file_size=size or "",
+                file_caption=fallback_caption,
+                metadata=metadata
+            )
             # 🔥 REMOVE SPECIAL WORDS FROM FINAL CAPTION
             f_caption = clean_special_words(f_caption)
         except Exception as e:
