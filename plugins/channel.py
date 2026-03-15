@@ -109,7 +109,7 @@ LANGUAGES = {
 
 def clean_cache():
 
-    now = time.time()
+    now = datetime.now().timestamp()
 
     expired = []
 
@@ -120,6 +120,11 @@ def clean_cache():
 
     for key in expired:
         del NOTIFIED_CACHE[key]
+
+
+def save_notification(key):
+
+    NOTIFIED_CACHE[key] = datetime.now().timestamp()
 
 def clean_title(name: str) -> str:
 
@@ -268,10 +273,6 @@ def is_already_notified(key):
     clean_cache()
 
     return key in NOTIFIED_CACHE
-
-def save_notification(key):
-
-    NOTIFIED_CACHE[key] = time.time()
 
 async def build_caption(title, season=None, year=None, languages=None, combined=False):
 
