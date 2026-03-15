@@ -273,7 +273,7 @@ def save_notification(key):
 
     NOTIFIED_CACHE[key] = time.time()
 
-def build_caption(title, season=None, year=None, languages=None, combined=False):
+async def build_caption(title, season=None, year=None, languages=None, combined=False):
 
     # SERIES
     if season:
@@ -295,6 +295,7 @@ def build_caption(title, season=None, year=None, languages=None, combined=False)
 
         tag = "#MOVIE"
 
+    # MAIN TITLE LINE
     caption = f"✅ <b>{title_text}</b> <code>{tag}</code>"
 
     # LANGUAGE LINE
@@ -302,10 +303,12 @@ def build_caption(title, season=None, year=None, languages=None, combined=False)
         caption += f"\n\n🎙 {languages}"
 
     # SEARCH LINKS
-    links = await build_search_links(title)
-
-    if links:
-        caption += f"\n\n⭐ {links}"
+    try:
+        links = await build_search_links(title)
+        if links:
+            caption += f"\n\n⭐ {links}"
+    except:
+        pass
 
     return caption
 
