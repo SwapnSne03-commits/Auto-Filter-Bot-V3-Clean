@@ -119,10 +119,10 @@ def detect_episode(text):
 
     patterns = [
 
-        r'e(\d{1,3})',          # E01
-        r'ep(\d{1,3})',         # Ep01
-        r'episode[\s\-]?(\d{1,3})',  # Episode 01
-        r'(\d{1,2})x(\d{1,3})'  # 1x01
+        r'\be(\d{1,3})\b',           # E01
+        r'\bep(\d{1,3})\b',          # Ep01
+        r'\bepisode[\s\-]?(\d{1,3})\b',   # Episode 01
+        r'\b\d{1,2}x(\d{1,3})\b'     # 1x01
     ]
 
     for pattern in patterns:
@@ -132,7 +132,7 @@ def detect_episode(text):
         if match:
 
             if 'x' in pattern:
-                return int(match.group(2))
+                return int(match.group(1))
 
             return int(match.group(1))
 
@@ -150,7 +150,8 @@ def detect_episode_range(text):
         r'e(\d{1,3})\s*-\s*e?(\d{1,3})',
         r'ep(\d{1,3})\s*-\s*(\d{1,3})',
         r'episode\s*(\d{1,3})\s*-\s*(\d{1,3})',
-        r'(\d{1,2})x(\d{1,3})\s*-\s*(\d{1,2})x(\d{1,3})'
+        r'(\d{1,2})x(\d{1,3})\s*-\s*(\d{1,2})x(\d{1,3})',
+        r'e(\d{1,3})\s+(\d{1,3})'
     ]
 
     for pattern in patterns:
@@ -162,7 +163,10 @@ def detect_episode_range(text):
             start = int(match.group(1))
             end = int(match.group(2))
 
-            return list(range(start, end + 1))
+            if start <= end:
+                return list(range(start, end + 1))
+            else:
+                return None
 
     return None
 
@@ -230,30 +234,29 @@ def build_episode_range(episodes):
 
     eps = sorted(set(episodes))
 
+    start = eps[0]
+    prev = eps[0]
+
     ranges = []
 
-    start = eps[0]
-    end = eps[0]
+    for ep in eps[1:]:
 
-    for num in eps[1:]:
+        if ep == prev + 1:
+            prev = ep
+            continue
 
-        if num == end + 1:
-
-            end = num
-
+        if start == prev:
+            ranges.append(f"E{start:02}")
         else:
+            ranges.append(f"E{start:02}-E{prev:02}")
 
-            if start == end:
-                ranges.append(f"E{start:02}")
-            else:
-                ranges.append(f"E{start:02}-E{end:02}")
+        start = ep
+        prev = ep
 
-            start = end = num
-
-    if start == end:
+    if start == prev:
         ranges.append(f"E{start:02}")
     else:
-        ranges.append(f"E{start:02}-E{end:02}")
+        ranges.append(f"E{start:02}-E{prev:02}")
 
     return ", ".join(ranges)
 
@@ -384,36 +387,53 @@ async def send_movie_update(bot, file_name, caption):
         if not tmdb_data:
             return
 
-        season_text = build_season_text(cache["seasons"], cache["combined"])
-
         quality_text = ", ".join(sorted(cache["qualities"])) or pixel
         lang_text = ", ".join(sorted(cache["languages"])) or language
 
-        is_series = "tv" in tmdb_data.get("kind","").lower() or season_text
+        is_series = "tv" in tmdb_data.get("kind","").lower() or cache["seasons"]
 
         year_text = tmdb_data.get("release_date","")
         year_text = year_text[:4] if year_text else "N/A"
 
         search_movie = file_name.replace(" ", "-")
 
-        if is_series and season_text:
+        season_num = None
 
-            season_num = sorted(cache["seasons"].keys())[0] if cache["seasons"] else 1
+        if cache["seasons"]:
+            season_num = sorted(cache["seasons"].keys())[0]
+
+        title_display = escape_html(tmdb_data["title"])
+
+        if is_series and season_num:
+            title_display = f"{title_display} S{season_num:02}"
+        elif not is_series and year_text != "N/A":
+            title_display = f"{title_display} {year_text}"
+        
+        episodes = cache["seasons"].get(season_num, set())
+        episode_text = build_episode_range(episodes)
+
+        if season_num and season_num in cache["combined"]:
+            if episode_text:
+                episode_text = f"{episode_text} + COMBINED"
+            else:
+                episode_text = "COMBINED"
+
+        if is_series and season_num:
 
             full_caption = SERIES_UPDATE_TEMPLATE.format(
-                escape_html(tmdb_data["title"]),
+                title_display,
                 fmt,
                 quality_text,
                 lang_text,
                 year_text,
                 season_num,
-                season_text
+                episode_text or "N/A"
             )
 
         else:
 
             full_caption = MOVIE_UPDATE_TEMPLATE.format(
-                escape_html(tmdb_data["title"]),
+                title_display,
                 fmt,
                 quality_text,
                 lang_text,
