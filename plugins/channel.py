@@ -168,6 +168,58 @@ def clean_title(name: str) -> str:
 
     return name.strip().title()
 
+def extract_title(name: str):
+
+    if not name:
+        return ""
+
+    name = name.lower()
+
+    # replace separators
+    name = name.replace(".", " ")
+    name = name.replace("_", " ")
+    name = name.replace("-", " ")
+
+    # remove urls / tags
+    name = re.sub(r'http\S+', '', name)
+    name = re.sub(r'@\w+', '', name)
+
+    # remove brackets
+    name = re.sub(r'\[.*?\]|\(.*?\)|\{.*?\}', '', name)
+
+    # stop words (video info)
+    stop_words = [
+        "2160p","1440p","1080p","720p","480p","360p",
+        "x264","x265","hevc","h264","h265",
+        "webdl","webrip","bluray","hdrip","dvdrip",
+        "nf","amzn","dsnp","hdtv",
+        "aac","ddp","ddp5","atmos"
+    ]
+
+    parts = name.split()
+
+    title_parts = []
+
+    for part in parts:
+
+        # stop if resolution etc appears
+        if part in stop_words:
+            break
+
+        # stop if year
+        if re.match(r'(19|20)\d{2}', part):
+            break
+
+        # stop if season
+        if re.match(r's\d{1,2}', part):
+            break
+
+        title_parts.append(part)
+
+    title = " ".join(title_parts)
+
+    return title.strip().title()
+
 def detect_season(text: str):
 
     if not text:
@@ -374,11 +426,24 @@ async def media(bot, message):
         if not media:
             return
 
-        file_name = media.file_name or ""
-        caption = message.caption or ""
+        media.file_type = "document"
 
-        # trigger update engine
-        await send_movie_update(bot, file_name, caption)
+        if message.video:
+            media.file_type = "video"
+
+        if message.audio:
+            media.file_type = "audio"
+
+        media.caption = message.caption
+
+        success, silentxbotz = await save_file(media)
+
+        if success and silentxbotz == 1 and await get_status(bot.me.id):
+
+            file_name = media.file_name or ""
+            caption = message.caption or ""
+
+            await send_movie_update(bot, file_name, caption)
 
     except Exception as e:
         LOGGER.error(f"Media Handler Error: {e}")
@@ -391,7 +456,7 @@ async def send_movie_update(bot, file_name, caption):
         text = f"{file_name} {caption}"
 
         # CLEAN TITLE
-        title = clean_title(file_name)
+        title = extract_title(file_name)
 
         # DETECT SEASON
         season = detect_season(text)
@@ -425,13 +490,22 @@ async def send_movie_update(bot, file_name, caption):
         )
 
         # SEND MESSAGE
+        safe_title = re.sub(r'[^a-zA-Z0-9 ]', '', title)
+        safe_title = safe_title.replace(" ", "-")
+
+        get_file = f"https://telegram.me/{temp.U_NAME}?start=getfile-{safe_title}"
+
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("📱 Get File", url=get_file)]
+        ])
+
         await bot.send_message(
             chat_id=MOVIE_UPDATE_CHANNEL,
             text=caption_text,
             parse_mode=ParseMode.HTML,
+            reply_markup=keyboard,
             disable_web_page_preview=True
         )
-
     except Exception as e:
         LOGGER.error(f"Update Error: {e}")
     
