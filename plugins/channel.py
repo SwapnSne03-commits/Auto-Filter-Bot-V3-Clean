@@ -69,8 +69,6 @@ SERIES_UPDATE_TEMPLATE = """
 📅 <b>Year</b> : {}
 ☀ <b>Season</b> : {:02}
 💎 <b>Episodes</b> : {}
-
-⚡ <b>Powered By</b> @Graduate_Movies
 """
 
 MOVIE_UPDATE_TEMPLATE = """
@@ -83,8 +81,6 @@ MOVIE_UPDATE_TEMPLATE = """
 🔊 <b>Audio</b> : {}
 
 📅 <b>Year</b> : {}
-
-⚡ <b>Powered By</b> @Graduate_Movies
 """
 
 notified_movies = set()
@@ -419,7 +415,7 @@ async def send_movie_update(bot, file_name, caption):
         file_name = await movie_name_format(file_name)        
         caption = caption or ""
 
-        year_match = re.search(r"\b(19|20)\d{2}\b", f"{file_name} {caption}")
+        year_match = re.search(r"(19|20)\d{2}", f"{file_name} {caption}")
         year = year_match.group(0) if year_match else None
 
         episode = detect_episode(f"{file_name} {caption}")
@@ -491,7 +487,7 @@ async def send_movie_update(bot, file_name, caption):
         season_num = None
 
         if cache["seasons"]:
-            season_num = sorted(cache["seasons"].keys())[0]
+            season_num = max(cache["seasons"].keys())
 
         title_display = escape_html(tmdb_data["title"])
 
@@ -604,7 +600,7 @@ async def send_with_visual(bot, caption, tmdb_data, key):
         get_file = f'https://telegram.me/{temp.U_NAME}?start=getfile-{key.replace(" ","-")}'
 
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("📱 Get File", url=get_file)],
+            [InlineKeyboardButton("❗ ᴄʟɪᴄᴋ ᴛᴏ ɢᴇᴛ ғɪʟᴇ ❗", url=get_file)],
             get_trailer_button(tmdb_data)
         ])
 
