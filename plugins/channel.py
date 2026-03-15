@@ -1,7 +1,11 @@
 import re
 import time
 import asyncio
-
+import aiohttp
+import io
+import hashlib
+from datetime import datetime
+from typing import Optional, Dict, Any
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ParseMode
@@ -241,27 +245,7 @@ def detect_combined(text: str):
 
     text = text.lower()
 
-    keywords = [
-
-        "complete",
-        "complete series",
-        "complete season",
-        "full season",
-        "full series",
-        "batch",
-        "combined",
-        "season pack",
-        "episode pack",
-        "all episodes",
-        "multi episode",
-        "collection",
-        "全集",          # chinese
-        "pack",
-        "season complete"
-
-    ]
-
-    for word in keywords:
+    for word in COMBINED_KEYWORDS:
         if word in text:
             return True
 
@@ -289,7 +273,7 @@ def save_notification(key):
 
     NOTIFIED_CACHE[key] = time.time()
 
-async def build_caption(title, season=None, year=None, languages=None, combined=False):
+def build_caption(title, season=None, year=None, languages=None, combined=False):
 
     # SERIES
     if season:
