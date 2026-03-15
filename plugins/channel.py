@@ -1,39 +1,25 @@
 import re
-import io
-import math
-import random
-import string
-import aiohttp
+import time
 import asyncio
-import hashlib
-import requests
-from info import *
-from utils import *
-from logging_helper import LOGGER
-from typing import Optional, Dict, Any
-from datetime import datetime
+
 from pyrogram import Client, filters
-from database.ia_filterdb import save_file
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ParseMode
 
-CAPTION_LANGUAGES = ["Bhojpuri", "Hindi", "Bengali", "Tamil", "English", "Bangla", "Telugu", "Malayalam", "Kannada", "Marathi", "Punjabi", "Bengoli", "Gujrati", "Korean", "Gujarati", "Spanish", "French", "German", "Chinese", "Arabic", "Portuguese", "Russian", "Japanese", "Odia", "Assamese", "Urdu"]
+from info import *
+from utils import *
+from logging_helper import LOGGER
+from database.ia_filterdb import save_file
 
-FORMAT_KEYWORDS = [
-    "WEB-DL",
-    "WEBRip",
-    "HDRip",
-    "BluRay",
-    "BRRip",
-    "BDRip",
-    "CAMRip",
-    "HDCAM",
-    "HDTC",
-    "DVDRip",
-    "DVDScr",
-    "PreDVD",
-    "HQ"
-]
+# temporary notification cache
+NOTIFIED_CACHE = {}
+
+# cache lifetime (seconds)
+CACHE_TIMEOUT = 86400  # 24 hours
+
+media_filter = filters.document | filters.video | filters.audio
+
+CAPTION_LANGUAGES = ["Bhojpuri", "Hindi", "Bengali", "Tamil", "English", "Bangla", "Telugu", "Malayalam", "Kannada", "Marathi", "Punjabi", "Bengoli", "Gujrati", "Korean", "Gujarati", "Spanish", "French", "German", "Chinese", "Arabic", "Portuguese", "Russian", "Japanese", "Odia", "Assamese", "Urdu"]
 
 DEFAULT_IMAGE_URL = "https://te.legra.ph/file/88d845b4f8a024a71465d.jpg"
 
@@ -45,7 +31,6 @@ SILENTX_PREMIUM_UPDATE = """
 <code>━━━━━━━━━━━━━━━━━━</code>
 <b>🔈 Audio</b>: {}
 <b>📺 Format</b>: {}
-<b>📀 Episodes</b>: {}
 
 <code>━━━━━━━━━━━━━━━━━━</code>
 <b>🎭 Director</b>: {}
@@ -56,146 +41,125 @@ SILENTX_PREMIUM_UPDATE = """
 
 <b>⚡ Powered By @Graduate_Movies</b>
 """
+UPDATE_TEMPLATE = """
+✅ <b>{}</b> <code>{}</code>
 
-SERIES_UPDATE_TEMPLATE = """
-📌 <b>NEW FILES ADDED</b>
-
-🏷 <b>Title</b> : {} #SERIES
-
-📍 <b>Format</b> : {}
-🌿 <b>Quality</b> : {}
-🔊 <b>Audio</b> : {}
-
-📅 <b>Year</b> : {}
-☀ <b>Season</b> : {:02}
-💎 <b>Episodes</b> : {}
-"""
-
-MOVIE_UPDATE_TEMPLATE = """
-📌 <b>NEW FILES ADDED</b>
-
-🏷 <b>Title</b> : {} #MOVIE
-
-📍 <b>Format</b> : {}
-🌿 <b>Quality</b> : {}
-🔊 <b>Audio</b> : {}
-
-📅 <b>Year</b> : {}
+🎙 {}
 """
 
 notified_movies = set()
-media_filter = filters.document | filters.video | filters.audio
+#media_filter = filters.document | filters.video | filters.audio
 
-CACHE = {}
-CACHE_TIME = {}
-CACHE_EXPIRE = 3600
+COMBINED_KEYWORDS = [
+    "complete",
+    "complete series",
+    "complete season",
+    "full series",
+    "season pack",
+    "batch",
+    "combined",
+    "all episodes",
+    "multi episode",
+    "collection",
+    "episode pack"
+]
 
-PENDING_UPDATES = {}
-UPDATE_DELAY = 4
+LANGUAGES = {
+    "hindi":"Hindi",
+    "eng":"English",
+    "english":"English",
+    "tam":"Tamil",
+    "tamil":"Tamil",
+    "tel":"Telugu",
+    "telugu":"Telugu",
+    "mal":"Malayalam",
+    "malayalam":"Malayalam",
+    "kan":"Kannada",
+    "kannada":"Kannada",
+    "mar":"Marathi",
+    "marathi":"Marathi",
+    "pun":"Punjabi",
+    "punjabi":"Punjabi",
+    "ben":"Bengali",
+    "bengali":"Bengali",
+    "bangla":"Bangla",
+    "guj":"Gujarati",
+    "gujarati":"Gujarati",
+    "kor":"Korean",
+    "korean":"Korean",
+    "jap":"Japanese",
+    "japanese":"Japanese",
+    "chi":"Chinese",
+    "chinese":"Chinese",
+    "spa":"Spanish",
+    "spanish":"Spanish",
+    "fre":"French",
+    "french":"French",
+    "ger":"German",
+    "german":"German",
+    "rus":"Russian",
+    "russian":"Russian",
+    "ara":"Arabic",
+    "arabic":"Arabic",
+}
 
-def detect_pixels(text):
+def clean_cache():
 
-    if not text:
-        return []
+    now = time.time()
 
-    text = text.lower()
+    expired = []
 
-    pixels = [
-        "2160p",
-        "1440p",
-        "1080p",
-        "720p",
-        "480p",
-        "360p"
-    ]
+    for key, ts in NOTIFIED_CACHE.items():
 
-    found = []
+        if now - ts > CACHE_TIMEOUT:
+            expired.append(key)
 
-    for p in pixels:
-        if p in text:
-            found.append(p)
+    for key in expired:
+        del NOTIFIED_CACHE[key]
 
-    return found
+def clean_title(name: str) -> str:
 
-async def get_languages(text):
+    if not name:
+        return ""
 
-    if not text:
-        return "Multi-Audio"
+    name = name.lower()
 
-    text = text.lower()
+    # remove urls
+    name = re.sub(r'http\S+', '', name)
 
-    lang_map = {
-        "hin": "Hindi",
-        "hindi": "Hindi",
+    # remove telegram tags
+    name = re.sub(r'@\w+', '', name)
 
-        "eng": "English",
-        "english": "English",
+    # remove brackets
+    name = re.sub(r'\[.*?\]|\(.*?\)|\{.*?\}', '', name)
 
-        "tam": "Tamil",
-        "tamil": "Tamil",
+    # remove resolution
+    name = re.sub(r'\b(2160p|1440p|1080p|720p|480p|360p)\b', '', name)
 
-        "tel": "Telugu",
-        "telugu": "Telugu",
+    # remove codecs
+    name = re.sub(r'\b(x264|x265|hevc|h264|h265)\b', '', name)
 
-        "mal": "Malayalam",
-        "malayalam": "Malayalam",
+    # remove source
+    name = re.sub(r'\b(web[- ]dl|webrip|bluray|hdrip|dvdrip)\b', '', name)
 
-        "kan": "Kannada",
-        "kannada": "Kannada",
+    # remove audio tags
+    name = re.sub(r'\b(ddp\d\.\d|aac|atmos)\b', '', name)
 
-        "ben": "Bengali",
-        "bengali": "Bengali",
-        "bangla": "Bengali",
+    # remove episode pattern
+    name = re.sub(r'\bs\d{1,2}e\d{1,2}\b', '', name)
 
-        "mar": "Marathi",
-        "marathi": "Marathi",
+    # remove year
+    name = re.sub(r'\b(19|20)\d{2}\b', '', name)
 
-        "pun": "Punjabi",
-        "punjabi": "Punjabi",
+    # replace dots
+    name = name.replace(".", " ")
 
-        "guj": "Gujarati",
-        "gujarati": "Gujarati",
+    # remove extra spaces
+    name = re.sub(r'\s+', ' ', name)
 
-        "urd": "Urdu",
-        "urdu": "Urdu",
+    return name.strip().title()
 
-        "jap": "Japanese",
-        "japanese": "Japanese",
-
-        "kor": "Korean",
-        "korean": "Korean",
-
-        "chi": "Chinese",
-        "chinese": "Chinese"
-    }
-
-    tokens = re.split(r'[\s\-\._]+', text)
-
-    found = []
-
-    for token in tokens:
-        if token in lang_map:
-            found.append(lang_map[token])
-
-    if not found:
-        return "Multi-Audio"
-
-    return ", ".join(sorted(set(found)))
-
-async def detect_format(text: str) -> str:
-
-    if not text:
-        return "HDRip"
-
-    text = text.lower()
-
-    for fmt in FORMAT_KEYWORDS:
-        if fmt.lower() in text:
-            return fmt
-
-    return "HDRip"
-
-def detect_episode(text):
+def detect_season(text: str):
 
     if not text:
         return None
@@ -204,11 +168,10 @@ def detect_episode(text):
 
     patterns = [
 
-        r'\bs\d{1,2}e(\d{1,3})\b',   # S01E05
-        r'\be(\d{1,3})\b',           # E05
-        r'\bep(\d{1,3})\b',          # EP05
-        r'\bepisode[\s\-]?(\d{1,3})\b',
-        r'\b\d{1,2}x(\d{1,3})\b'     # 1x05
+        r's(?:eason)?[\s._-]*(\d{1,2})',   # S01 / Season 1
+        r'(\d{1,2})x(\d{1,2})',            # 1x01
+        r's(\d{1,2})e(\d{1,2})',           # S01E02
+
     ]
 
     for pattern in patterns:
@@ -219,79 +182,59 @@ def detect_episode(text):
             return int(match.group(1))
 
     return None
-    
-def detect_episode_range(text):
+
+def detect_year(text: str):
+
+    if not text:
+        return None
+
+    match = re.search(r'(19|20)\d{2}', text)
+
+    if match:
+        return match.group(0)
+
+    return None
+
+async def detect_languages(text: str):
 
     if not text:
         return None
 
     text = text.lower()
 
-    patterns = [
+    found = []
 
-        r'e(\d{1,3})\s*-\s*e?(\d{1,3})',
-        r'ep(\d{1,3})\s*-\s*(\d{1,3})',
-        r'episode\s*(\d{1,3})\s*-\s*(\d{1,3})',
+    # split common separators
+    parts = re.split(r'[\s\-\+_/.,|]+', text)
 
-        r's\d{1,2}e(\d{1,3})\s*-\s*e?(\d{1,3})',   # S01E01-E05
-        r's\d{1,2}e(\d{1,3})\s+e?(\d{1,3})',       # S01E01 E05
+    for part in parts:
 
-        r'(\d{1,2})x(\d{1,3})\s*-\s*(\d{1,2})x(\d{1,3})'
+        if part in LANGUAGES:
+            lang = LANGUAGES[part]
 
-    ]
+            if lang not in found:
+                found.append(lang)
 
-    for pattern in patterns:
+        else:
 
-        match = re.search(pattern, text)
+            for key, value in LANGUAGES.items():
 
-        if match:
+                if key in part:
 
-            start = int(match.group(1))
-            end = int(match.group(2))
+                    if value not in found:
+                        found.append(value)
 
-            if start <= end:
-                return list(range(start, end + 1))
+    # dual audio fallback
+    if "dual" in text and len(found) == 1:
+        if "English" not in found:
+            found.append("English")
 
-    return None
+    if not found:
+        return None
 
-def get_cache(key):
+    return ", ".join(found[:3])
 
-    now = asyncio.get_event_loop().time()
-
-    if key in CACHE_TIME:
-
-        if now - CACHE_TIME[key] > CACHE_EXPIRE:
-
-            CACHE.pop(key, None)
-            CACHE_TIME.pop(key, None)
-
-    if key not in CACHE:
-
-        CACHE[key] = {
-            "seasons": {},
-            "combined": set(),
-            "qualities": set(),
-            "languages": set(),
-            "message_id": None
-        }
-
-    CACHE_TIME[key] = now
-
-    return CACHE[key]
-
-def schedule_update(bot, key, caption, tmdb):
-
-    if key in PENDING_UPDATES:
-        PENDING_UPDATES[key].cancel()
-
-    loop = asyncio.get_event_loop()
-
-    PENDING_UPDATES[key] = loop.call_later(
-        UPDATE_DELAY,
-        lambda: asyncio.create_task(send_with_visual(bot, caption, tmdb, key))
-    )
-
-def is_combined(text):
+def detect_combined(text: str):
 
     if not text:
         return False
@@ -299,10 +242,23 @@ def is_combined(text):
     text = text.lower()
 
     keywords = [
-        "combined",
+
         "complete",
+        "complete series",
+        "complete season",
         "full season",
-        "all episodes"
+        "full series",
+        "batch",
+        "combined",
+        "season pack",
+        "episode pack",
+        "all episodes",
+        "multi episode",
+        "collection",
+        "全集",          # chinese
+        "pack",
+        "season complete"
+
     ]
 
     for word in keywords:
@@ -311,256 +267,187 @@ def is_combined(text):
 
     return False
 
-def build_episode_range(episodes):
+def build_cache_key(title, season=None, year=None):
 
-    if not episodes:
-        return None
+    title = title.lower()
 
-    eps = sorted(set(episodes))
+    if season:
+        return f"{title}_s{season}"
 
-    start = eps[0]
-    prev = eps[0]
+    if year:
+        return f"{title}_{year}"
 
-    ranges = []
+    return title
 
-    for ep in eps[1:]:
+def is_already_notified(key):
 
-        if ep == prev + 1:
-            prev = ep
-            continue
+    clean_cache()
 
-        if start == prev:
-            ranges.append(f"E{start:02}")
+    return key in NOTIFIED_CACHE
+
+def save_notification(key):
+
+    NOTIFIED_CACHE[key] = time.time()
+
+async def build_caption(title, season=None, year=None, languages=None, combined=False):
+
+    # SERIES
+    if season:
+
+        if combined:
+            title_text = f"{title} S{season:02} COMPLETE"
         else:
-            ranges.append(f"E{start:02}-E{prev:02}")
+            title_text = f"{title} S{season:02}"
 
-        start = ep
-        prev = ep
+        tag = "#SERIES"
 
-    if start == prev:
-        ranges.append(f"E{start:02}")
+    # MOVIE
     else:
-        ranges.append(f"E{start:02}-E{prev:02}")
 
-    return ", ".join(ranges)
-
-def build_season_text(seasons, combined):
-
-    lines = []
-
-    all_seasons = set(seasons.keys()) | set(combined)
-
-    for season in sorted(all_seasons):
-
-        eps = seasons.get(season, set())
-
-        ep_text = build_episode_range(eps)
-
-        if season in combined:
-
-            if ep_text:
-                lines.append(f"☀ <b>Season {season:02}</b> : {ep_text} + COMBINED")
-            else:
-                lines.append(f"☀ <b>Season {season:02}</b> : COMBINED")
-
+        if year:
+            title_text = f"{title} {year}"
         else:
+            title_text = title
 
-            if ep_text:
-                lines.append(f"☀ <b>Season {season:02}</b> : {ep_text}")
+        tag = "#MOVIE"
 
-    return "\n".join(lines)
+    caption = f"✅ <b>{title_text}</b> <code>{tag}</code>"
 
-def detect_season(text):
+    # LANGUAGE LINE
+    if languages:
+        caption += f"\n\n🎙 {languages}"
 
-    if not text:
-        return None
+    # SEARCH LINKS
+    links = await build_search_links(title)
 
-    text = text.lower()
+    if links:
+        caption += f"\n\n⭐ {links}"
 
-    patterns = [
-        r's(\d{1,2})',
-        r'season[\s\-]?(\d{1,2})'
-    ]
+    return caption
 
-    for pattern in patterns:
+async def build_search_links(title: str):
 
-        match = re.search(pattern, text)
+    if not title:
+        return ""
 
-        if match:
-            return int(match.group(1))
+    imdb_query = title.replace(" ", "+")
+    tmdb_query = title.replace(" ", "%20")
+    lb_query = title.replace(" ", "-")
 
-    return None
+    imdb_url = f"https://www.imdb.com/find?q={imdb_query}"
+    tmdb_url = f"https://www.themoviedb.org/search?query={tmdb_query}"
+    letterboxd_url = f"https://letterboxd.com/search/{lb_query}/"
+
+    links = []
+
+    try:
+
+        async with aiohttp.ClientSession() as session:
+
+            # IMDb check
+            async with session.get(imdb_url, timeout=10) as r:
+                html = await r.text()
+                if "findResult" in html:
+                    links.append(f'<a href="{imdb_url}">IMDb</a>')
+
+            # TMDB check
+            async with session.get(tmdb_url, timeout=10) as r:
+                html = await r.text()
+                if "card v4 tight" in html or "results" in html:
+                    links.append(f'<a href="{tmdb_url}">TMDB</a>')
+
+            # Letterboxd check
+            async with session.get(letterboxd_url, timeout=10) as r:
+                html = await r.text()
+                if "poster-list" in html:
+                    links.append(f'<a href="{letterboxd_url}">Letterboxd</a>')
+
+    except:
+        pass
+
+    return " | ".join(links)
 
 @Client.on_message(filters.chat(CHANNELS) & media_filter)
 async def media(bot, message):
-    for file_type in ("document", "video", "audio"):
-        media = getattr(message, file_type, None)
-        if media is not None:
-            break
-    else:
-        return
-    media.file_type = file_type
-    media.caption = message.caption or ""
-    success, silentxbotz = await save_file(media)
-    try:  
-        if success and silentxbotz == 1 and await get_status(bot.me.id):            
-            await send_movie_update(bot, file_name=media.file_name, caption=media.caption)
-    except Exception as e:
-        LOGGER.error(f"Error In Movie Update - {e}")
-        pass
 
-async def send_movie_update(bot, file_name, caption):
     try:
 
-        file_name = await movie_name_format(file_name)        
-        caption = caption or ""
+        media = None
 
-        year_match = re.search(r"(19|20)\d{2}", f"{file_name} {caption}")
-        year = year_match.group(0) if year_match else None
+        if message.document:
+            media = message.document
 
-        episode = detect_episode(f"{file_name} {caption}")
-        episode_range = detect_episode_range(f"{file_name} {caption}")
-        combined = is_combined(f"{file_name} {caption}")
+        elif message.video:
+            media = message.video
 
-        quality = await get_qualities(caption) or "HDRip"
-        pixels = detect_pixels(f"{file_name} {caption}")
-        pixel = ", ".join(pixels) if pixels else "720p"
-        language = await get_languages(caption) or "Multi-Audio"
+        elif message.audio:
+            media = message.audio
 
-        season_match = re.search(r"(?i)(?:s|season)0*(\d{1,2})", caption) or re.search(r"(?i)(?:s|season)0*(\d{1,2})", file_name)
-
-        if year:
-            file_name = file_name[:file_name.find(year) + 4]
-
-        elif season_match:
-            season = season_match.group(1)
-            file_name = file_name[:file_name.find(season) + 1]
-
-        # cache
-        cache = get_cache(file_name)
-
-        # episode store
-        season = detect_season(f"{file_name} {caption}")
-
-        if season:
-
-            if season not in cache["seasons"]:
-                cache["seasons"][season] = set()
-
-            if episode is not None:
-                cache["seasons"][season].add(int(episode))
-
-            if episode_range:
-                for ep in episode_range:
-                    cache["seasons"][season].add(int(ep))
-
-            if combined:
-                cache["combined"].add(season)
-
-        # quality store
-        if pixels:
-            for p in pixels:
-                cache["qualities"].add(p.strip())
-
-        # language store
-        if language:
-            for l in language.split(","):
-                cache["languages"].add(l.strip())
-
-        quality_text = ", ".join(sorted(cache["qualities"])) or pixel
-        lang_text = ", ".join(sorted(cache["languages"])) or language
-
-        fmt = await detect_format(f"{file_name} {caption}")
-
-        tmdb_data = await fetch_tmdb_data(file_name, year)
-
-        if not tmdb_data:
-
-            basic_title = file_name.replace(".", " ").strip()
-
-            if year:
-                basic_title = f"{basic_title} {year}"
-
-            caption = MOVIE_UPDATE_TEMPLATE.format(
-                basic_title,
-                fmt,
-                quality_text,
-                lang_text,
-                year or "N/A"
-            )
-
-            # safe fallback data
-            tmdb_data = {
-                "title": basic_title,
-                "release_date": "",
-                "poster_url": "",
-                "backdrop_url": ""
-            }
-
-            schedule_update(bot, file_name, caption, tmdb_data)
+        if not media:
             return
 
-        quality_text = ", ".join(sorted(cache["qualities"])) or pixel
-        lang_text = ", ".join(sorted(cache["languages"])) or language
+        file_name = media.file_name or ""
+        caption = message.caption or ""
 
-        is_series = "tv" in tmdb_data.get("kind","").lower() or cache["seasons"]
-
-        year_text = tmdb_data.get("release_date","")
-        year_text = year_text[:4] if year_text else "N/A"
-
-        search_movie = file_name.replace(" ", "-")
-
-        season_num = None
-
-        if cache["seasons"]:
-            season_num = max(cache["seasons"].keys())
-
-        title_display = escape_html(tmdb_data["title"])
-
-        # title পাশে season / year শুধু caption বা filename থেকে
-        if is_series and season_num:
-            title_display = f"{title_display} S{season_num:02}"
-
-        elif not is_series and year:
-            title_display = f"{title_display} {year}"
-        
-        episodes = cache["seasons"].get(season_num, set())
-        episode_text = build_episode_range(episodes)
-
-        if season_num and season_num in cache["combined"]:
-            if episode_text:
-                episode_text = f"{episode_text} + COMBINED"
-            else:
-                episode_text = "COMBINED"
-
-        if is_series and season_num:
-
-            full_caption = SERIES_UPDATE_TEMPLATE.format(
-                title_display,
-                fmt,
-                quality_text,
-                lang_text,
-                year_text,
-                season_num,
-                episode_text or "N/A"
-            )
-
-        else:
-
-            full_caption = MOVIE_UPDATE_TEMPLATE.format(
-                title_display,
-                fmt,
-                quality_text,
-                lang_text,
-                year_text,
-            )
-
-        schedule_update(bot, file_name, full_caption, tmdb_data)
+        # trigger update engine
+        await send_movie_update(bot, file_name, caption)
 
     except Exception as e:
-        LOGGER.error(f"Error In Movie Update: {e}")
+        LOGGER.error(f"Media Handler Error: {e}")
 
-        
+async def send_movie_update(bot, file_name, caption):
+
+    try:
+
+        caption = caption or ""
+        text = f"{file_name} {caption}"
+
+        # CLEAN TITLE
+        title = clean_title(file_name)
+
+        # DETECT SEASON
+        season = detect_season(text)
+
+        # DETECT YEAR
+        year = detect_year(text)
+
+        # DETECT COMBINED
+        combined = detect_combined(text)
+
+        # DETECT LANGUAGE
+        languages = await detect_languages(text)
+
+        # CACHE KEY
+        cache_key = build_cache_key(title, season, year)
+
+        # CHECK CACHE
+        if is_already_notified(cache_key):
+            return
+
+        # SAVE CACHE
+        save_notification(cache_key)
+
+        # BUILD CAPTION
+        caption_text = await build_caption(
+            title=title,
+            season=season,
+            year=year,
+            languages=languages,
+            combined=combined
+        )
+
+        # SEND MESSAGE
+        await bot.send_message(
+            chat_id=MOVIE_UPDATE_CHANNEL,
+            text=caption_text,
+            parse_mode=ParseMode.HTML,
+            disable_web_page_preview=True
+        )
+
+    except Exception as e:
+        LOGGER.error(f"Update Error: {e}")
+    
+
 def escape_html(text: str) -> str:
     if not text:
         return ""
@@ -615,88 +502,40 @@ def get_trailer_button(tmdb_data: Dict) -> list:
         return [InlineKeyboardButton("▶️ Watch Trailer", url=yt_videos[0]["url"])]
     return []
     
-async def send_with_visual(bot, caption, tmdb_data, key):
-
+async def send_with_visual(bot, caption: str, tmdb_data: Dict, search_movie):
     try:
-
-        cache = get_cache(key)
-
-        # clickable links
-        imdb_link = ""
-        tmdb_link = ""
-        letterboxd_link = ""
-
-        if tmdb_data:
-
-            if tmdb_data.get("imdb_id"):
-                imdb_link = f'https://www.imdb.com/title/{tmdb_data["imdb_id"]}'
-
-            if tmdb_data.get("id"):
-                tmdb_type = "tv" if "tv" in tmdb_data.get("kind","").lower() else "movie"
-                tmdb_link = f'https://www.themoviedb.org/{tmdb_type}/{tmdb_data["id"]}'
-
-            if tmdb_data.get("title"):
-                slug = tmdb_data["title"].lower().replace(" ", "-")
-                letterboxd_link = f'https://letterboxd.com/search/{slug}/'
-
-        rating_line = ""
-
-        if imdb_link:
-            rating_line += f'⭐ <a href="{imdb_link}">IMDb</a>'
-
-        if tmdb_link:
-            rating_line += f' | 🎭 <a href="{tmdb_link}">TMDB</a>'
-
-        if letterboxd_link:
-            rating_line += f' | 🟢 <a href="{letterboxd_link}">Letterboxd</a>'
-
-        if rating_line:
-            caption = caption + f"\n\n{rating_line}"
-
-        get_file = f'https://telegram.me/{temp.U_NAME}?start=getfile-{key.replace(" ","-")}'
-
+        visual_url = await get_best_visual(tmdb_data)
+        get_file = f'https://telegram.me/{temp.U_NAME}?start=getfile-{search_movie}'
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("❗ ᴄʟɪᴄᴋ ᴛᴏ ɢᴇᴛ ғɪʟᴇ ❗", url=get_file)],
-            #get_trailer_button(tmdb_data)
+            [InlineKeyboardButton("📱 Get File", url=get_file)],
+            get_trailer_button(tmdb_data)
         ])
-
-        # FIRST MESSAGE
-        if cache["message_id"] is None:
-
-            msg = await bot.send_message(
-                chat_id=MOVIE_UPDATE_CHANNEL,
-                text=caption,
-                parse_mode=ParseMode.HTML,
-                reply_markup=keyboard,
-                disable_web_page_preview=True
-            )
-
-            cache["message_id"] = msg.id
-
-
-        # EDIT MESSAGE
-        else:
-
-            try:
-
-                await bot.edit_message_text(
-                    MOVIE_UPDATE_CHANNEL,
-                    cache["message_id"],
-                    caption,
-                    parse_mode=ParseMode.HTML,
-                    reply_markup=keyboard,
-                    disable_web_page_preview=True
-                )
-
-            except Exception as e:
-
-                LOGGER.error(f"Edit Error: {e}")
-
+        
+        if visual_url:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(visual_url, timeout=aiohttp.ClientTimeout(total=20)) as img_resp:
+                    if img_resp.status == 200:
+                        img_bytes = await img_resp.read()
+                        photo_file = io.BytesIO(img_bytes)
+                        photo_file.name = await generate_premium_filename(tmdb_data["title"])
+                        
+                        await bot.send_photo(
+                            chat_id=MOVIE_UPDATE_CHANNEL, 
+                            photo=photo_file, 
+                            caption=caption,
+                            parse_mode=ParseMode.HTML,
+                            reply_markup=keyboard
+                        )
+                        return       
+        await bot.send_photo(
+            chat_id=MOVIE_UPDATE_CHANNEL,
+            photo=DEFAULT_IMAGE_URL,
+            caption=caption,
+            parse_mode=ParseMode.HTML,
+            reply_markup=keyboard
+        )       
     except Exception as e:
-
         LOGGER.error(f"Visual Send Error: {e}")
-
-    
 
 async def get_best_visual(tmdb_data: Dict) -> Optional[str]:
     backdrops = tmdb_data.get("backdrops", {})
