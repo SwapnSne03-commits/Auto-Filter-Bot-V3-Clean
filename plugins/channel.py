@@ -618,47 +618,54 @@ async def send_with_visual(bot, caption, tmdb_data, key):
 
         cache = get_cache(key)
 
-        visual_url = None
+        # clickable links
+        imdb_link = ""
+        tmdb_link = ""
+        letterboxd_link = ""
+
         if tmdb_data:
-            visual_url = await get_best_visual(tmdb_data)
+
+            if tmdb_data.get("imdb_id"):
+                imdb_link = f'https://www.imdb.com/title/{tmdb_data["imdb_id"]}'
+
+            if tmdb_data.get("id"):
+                tmdb_type = "tv" if "tv" in tmdb_data.get("kind","").lower() else "movie"
+                tmdb_link = f'https://www.themoviedb.org/{tmdb_type}/{tmdb_data["id"]}'
+
+            if tmdb_data.get("title"):
+                slug = tmdb_data["title"].lower().replace(" ", "-")
+                letterboxd_link = f'https://letterboxd.com/search/{slug}/'
+
+        rating_line = ""
+
+        if imdb_link:
+            rating_line += f'⭐ <a href="{imdb_link}">IMDb</a>'
+
+        if tmdb_link:
+            rating_line += f' | 🎭 <a href="{tmdb_link}">TMDB</a>'
+
+        if letterboxd_link:
+            rating_line += f' | 🟢 <a href="{letterboxd_link}">Letterboxd</a>'
+
+        if rating_line:
+            caption = caption + f"\n\n{rating_line}"
 
         get_file = f'https://telegram.me/{temp.U_NAME}?start=getfile-{key.replace(" ","-")}'
 
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("❗ ᴄʟɪᴄᴋ ᴛᴏ ɢᴇᴛ ғɪʟᴇ ❗", url=get_file)],
-            get_trailer_button(tmdb_data)
+            #get_trailer_button(tmdb_data)
         ])
-
-        photo_to_send = DEFAULT_IMAGE_URL
-
-        if visual_url:
-            try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(visual_url, timeout=aiohttp.ClientTimeout(total=20)) as img_resp:
-
-                        if img_resp.status == 200:
-
-                            img_bytes = await img_resp.read()
-
-                            photo_file = io.BytesIO(img_bytes)
-
-                            photo_file.name = await generate_premium_filename(tmdb_data["title"])
-
-                            photo_to_send = photo_file
-
-            except:
-                pass
-
 
         # FIRST MESSAGE
         if cache["message_id"] is None:
 
-            msg = await bot.send_photo(
+            msg = await bot.send_message(
                 chat_id=MOVIE_UPDATE_CHANNEL,
-                photo=photo_to_send,
-                caption=caption,
+                text=caption,
                 parse_mode=ParseMode.HTML,
-                reply_markup=keyboard
+                reply_markup=keyboard,
+                disable_web_page_preview=True
             )
 
             cache["message_id"] = msg.id
@@ -669,11 +676,13 @@ async def send_with_visual(bot, caption, tmdb_data, key):
 
             try:
 
-                await bot.edit_message_caption(
+                await bot.edit_message_text(
                     MOVIE_UPDATE_CHANNEL,
                     cache["message_id"],
                     caption,
-                    reply_markup=keyboard
+                    parse_mode=ParseMode.HTML,
+                    reply_markup=keyboard,
+                    disable_web_page_preview=True
                 )
 
             except Exception as e:
@@ -683,6 +692,8 @@ async def send_with_visual(bot, caption, tmdb_data, key):
     except Exception as e:
 
         LOGGER.error(f"Visual Send Error: {e}")
+
+    
 
 async def get_best_visual(tmdb_data: Dict) -> Optional[str]:
     backdrops = tmdb_data.get("backdrops", {})
