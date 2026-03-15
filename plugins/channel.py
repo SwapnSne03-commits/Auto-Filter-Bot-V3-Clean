@@ -467,6 +467,9 @@ async def send_movie_update(bot, file_name, caption):
             for l in language.split(","):
                 cache["languages"].add(l.strip())
 
+        quality_text = ", ".join(sorted(cache["qualities"])) or pixel
+        lang_text = ", ".join(sorted(cache["languages"])) or language
+
         fmt = await detect_format(f"{file_name} {caption}")
 
         tmdb_data = await fetch_tmdb_data(file_name, year)
@@ -494,7 +497,7 @@ async def send_movie_update(bot, file_name, caption):
                 "backdrop_url": ""
             }
 
-            schedule_update(bot, cache_key, caption, tmdb_data)
+            schedule_update(bot, file_name, caption, tmdb_data)
             return
 
         quality_text = ", ".join(sorted(cache["qualities"])) or pixel
