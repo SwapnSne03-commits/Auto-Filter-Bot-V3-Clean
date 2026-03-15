@@ -495,10 +495,12 @@ async def send_movie_update(bot, file_name, caption):
 
         title_display = escape_html(tmdb_data["title"])
 
+        # title পাশে season / year শুধু caption বা filename থেকে
         if is_series and season_num:
             title_display = f"{title_display} S{season_num:02}"
-        elif not is_series and year_text != "N/A":
-            title_display = f"{title_display} {year_text}"
+
+        elif not is_series and year:
+            title_display = f"{title_display} {year}"
         
         episodes = cache["seasons"].get(season_num, set())
         episode_text = build_episode_range(episodes)
