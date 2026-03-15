@@ -97,6 +97,95 @@ CACHE_EXPIRE = 3600
 PENDING_UPDATES = {}
 UPDATE_DELAY = 4
 
+def detect_pixels(text):
+
+    if not text:
+        return []
+
+    text = text.lower()
+
+    pixels = [
+        "2160p",
+        "1440p",
+        "1080p",
+        "720p",
+        "480p",
+        "360p"
+    ]
+
+    found = []
+
+    for p in pixels:
+        if p in text:
+            found.append(p)
+
+    return found
+
+async def get_languages(text):
+
+    if not text:
+        return "Multi-Audio"
+
+    text = text.lower()
+
+    lang_map = {
+        "hin": "Hindi",
+        "hindi": "Hindi",
+
+        "eng": "English",
+        "english": "English",
+
+        "tam": "Tamil",
+        "tamil": "Tamil",
+
+        "tel": "Telugu",
+        "telugu": "Telugu",
+
+        "mal": "Malayalam",
+        "malayalam": "Malayalam",
+
+        "kan": "Kannada",
+        "kannada": "Kannada",
+
+        "ben": "Bengali",
+        "bengali": "Bengali",
+        "bangla": "Bengali",
+
+        "mar": "Marathi",
+        "marathi": "Marathi",
+
+        "pun": "Punjabi",
+        "punjabi": "Punjabi",
+
+        "guj": "Gujarati",
+        "gujarati": "Gujarati",
+
+        "urd": "Urdu",
+        "urdu": "Urdu",
+
+        "jap": "Japanese",
+        "japanese": "Japanese",
+
+        "kor": "Korean",
+        "korean": "Korean",
+
+        "chi": "Chinese",
+        "chinese": "Chinese"
+    }
+
+    tokens = re.split(r'[\s\-\._]+', text)
+
+    found = []
+
+    for token in tokens:
+        if token in lang_map:
+            found.append(lang_map[token])
+
+    if not found:
+        return "Multi-Audio"
+
+    return ", ".join(sorted(set(found)))
+
 async def detect_format(text: str) -> str:
 
     if not text:
@@ -119,10 +208,11 @@ def detect_episode(text):
 
     patterns = [
 
-        r'\be(\d{1,3})\b',           # E01
-        r'\bep(\d{1,3})\b',          # Ep01
-        r'\bepisode[\s\-]?(\d{1,3})\b',   # Episode 01
-        r'\b\d{1,2}x(\d{1,3})\b'     # 1x01
+        r'\bs\d{1,2}e(\d{1,3})\b',   # S01E05
+        r'\be(\d{1,3})\b',           # E05
+        r'\bep(\d{1,3})\b',          # EP05
+        r'\bepisode[\s\-]?(\d{1,3})\b',
+        r'\b\d{1,2}x(\d{1,3})\b'     # 1x05
     ]
 
     for pattern in patterns:
@@ -130,14 +220,10 @@ def detect_episode(text):
         match = re.search(pattern, text)
 
         if match:
-
-            if 'x' in pattern:
-                return int(match.group(1))
-
             return int(match.group(1))
 
     return None
-
+    
 def detect_episode_range(text):
 
     if not text:
@@ -150,8 +236,12 @@ def detect_episode_range(text):
         r'e(\d{1,3})\s*-\s*e?(\d{1,3})',
         r'ep(\d{1,3})\s*-\s*(\d{1,3})',
         r'episode\s*(\d{1,3})\s*-\s*(\d{1,3})',
-        r'(\d{1,2})x(\d{1,3})\s*-\s*(\d{1,2})x(\d{1,3})',
-        r'e(\d{1,3})\s+(\d{1,3})'
+
+        r's\d{1,2}e(\d{1,3})\s*-\s*e?(\d{1,3})',   # S01E01-E05
+        r's\d{1,2}e(\d{1,3})\s+e?(\d{1,3})',       # S01E01 E05
+
+        r'(\d{1,2})x(\d{1,3})\s*-\s*(\d{1,2})x(\d{1,3})'
+
     ]
 
     for pattern in patterns:
@@ -165,8 +255,6 @@ def detect_episode_range(text):
 
             if start <= end:
                 return list(range(start, end + 1))
-            else:
-                return None
 
     return None
 
@@ -339,7 +427,8 @@ async def send_movie_update(bot, file_name, caption):
         combined = is_combined(f"{file_name} {caption}")
 
         quality = await get_qualities(caption) or "HDRip"
-        pixel = await get_pixels(caption) or "720p"
+        pixels = detect_pixels(f"{file_name} {caption}")
+        pixel = ", ".join(pixels) if pixels else "720p"
         language = await get_languages(caption) or "Multi-Audio"
 
         cache = get_cache(file_name)
@@ -362,8 +451,8 @@ async def send_movie_update(bot, file_name, caption):
                 cache["combined"].add(season)
 
         # quality store
-        if pixel:
-            for p in pixel.split(","):
+        if pixels:
+            for p in pixels:
                 cache["qualities"].add(p.strip())
 
         # language store
