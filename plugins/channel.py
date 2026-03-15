@@ -414,127 +414,128 @@ async def media(bot, message):
         pass
 
 async def send_movie_update(bot, file_name, caption):
-    try:
+try:
 
-        file_name = await movie_name_format(file_name)        
-        caption = caption or ""
+    file_name = await movie_name_format(file_name)        
+    caption = caption or ""
 
-        year_match = re.search(r"\b(19|20)\d{2}\b", f"{file_name} {caption}")
-        year = year_match.group(0) if year_match else None
+    year_match = re.search(r"\b(19|20)\d{2}\b", f"{file_name} {caption}")
+    year = year_match.group(0) if year_match else None
 
-        episode = detect_episode(f"{file_name} {caption}")
-        episode_range = detect_episode_range(f"{file_name} {caption}")
-        combined = is_combined(f"{file_name} {caption}")
+    episode = detect_episode(f"{file_name} {caption}")
+    episode_range = detect_episode_range(f"{file_name} {caption}")
+    combined = is_combined(f"{file_name} {caption}")
 
-        quality = await get_qualities(caption) or "HDRip"
-        pixels = detect_pixels(f"{file_name} {caption}")
-        pixel = ", ".join(pixels) if pixels else "720p"
-        language = await get_languages(caption) or "Multi-Audio"
+    quality = await get_qualities(caption) or "HDRip"
+    pixels = detect_pixels(f"{file_name} {caption}")
+    pixel = ", ".join(pixels) if pixels else "720p"
+    language = await get_languages(caption) or "Multi-Audio"
 
-        cache = get_cache(file_name)
+    season_match = re.search(r"(?i)(?:s|season)0*(\d{1,2})", caption) or re.search(r"(?i)(?:s|season)0*(\d{1,2})", file_name)
 
-        # episode store
-        season = detect_season(f"{file_name} {caption}")
+    if year:
+        file_name = file_name[:file_name.find(year) + 4]
 
-        if season:
+    elif season_match:
+        season = season_match.group(1)
+        file_name = file_name[:file_name.find(season) + 1]
 
-            if season not in cache["seasons"]:
-                cache["seasons"][season] = set()
+    # ✔ Correct place for cache
+    cache = get_cache(file_name)
 
-            if episode:
-                cache["seasons"][season].add(episode)
+    # episode store
+    season = detect_season(f"{file_name} {caption}")
 
-            if episode_range:
-                for ep in episode_range:
-                    cache["seasons"][season].add(ep)
-            if combined:
-                cache["combined"].add(season)
+    if season:
 
-        # quality store
-        if pixels:
-            for p in pixels:
-                cache["qualities"].add(p.strip())
+        if season not in cache["seasons"]:
+            cache["seasons"][season] = set()
 
-        # language store
-        if language:
-            for l in language.split(","):
-                cache["languages"].add(l.strip())
+        if episode is not None:
+            cache["seasons"][season].add(int(episode))
 
-        season_match = re.search(r"(?i)(?:s|season)0*(\d{1,2})", caption) or re.search(r"(?i)(?:s|season)0*(\d{1,2})", file_name)
+        if episode_range:
+            for ep in episode_range:
+                cache["seasons"][season].add(int(ep))
 
-        if year:
-            file_name = file_name[:file_name.find(year) + 4]
+        if combined:
+            cache["combined"].add(season)
 
-        elif season_match:
-            season = season_match.group(1)
-            file_name = file_name[:file_name.find(season) + 1]
+    # quality store
+    if pixels:
+        for p in pixels:
+            cache["qualities"].add(p.strip())
 
-        fmt = await detect_format(f"{file_name} {caption}")
+    # language store
+    if language:
+        for l in language.split(","):
+            cache["languages"].add(l.strip())
 
-        tmdb_data = await fetch_tmdb_data(file_name, year)
+    fmt = await detect_format(f"{file_name} {caption}")
 
-        if not tmdb_data:
-            return
+    tmdb_data = await fetch_tmdb_data(file_name, year)
 
-        quality_text = ", ".join(sorted(cache["qualities"])) or pixel
-        lang_text = ", ".join(sorted(cache["languages"])) or language
+    if not tmdb_data:
+        return
 
-        is_series = "tv" in tmdb_data.get("kind","").lower() or cache["seasons"]
+    quality_text = ", ".join(sorted(cache["qualities"])) or pixel
+    lang_text = ", ".join(sorted(cache["languages"])) or language
 
-        year_text = tmdb_data.get("release_date","")
-        year_text = year_text[:4] if year_text else "N/A"
+    is_series = "tv" in tmdb_data.get("kind","").lower() or cache["seasons"]
 
-        search_movie = file_name.replace(" ", "-")
+    year_text = tmdb_data.get("release_date","")
+    year_text = year_text[:4] if year_text else "N/A"
 
-        season_num = None
+    search_movie = file_name.replace(" ", "-")
 
-        if cache["seasons"]:
-            season_num = sorted(cache["seasons"].keys())[0]
+    season_num = None
 
-        title_display = escape_html(tmdb_data["title"])
+    if cache["seasons"]:
+        season_num = sorted(cache["seasons"].keys())[0]
 
-        if is_series and season_num:
-            title_display = f"{title_display} S{season_num:02}"
-        elif not is_series and year_text != "N/A":
-            title_display = f"{title_display} {year_text}"
-        
-        episodes = cache["seasons"].get(season_num, set())
-        episode_text = build_episode_range(episodes)
+    title_display = escape_html(tmdb_data["title"])
 
-        if season_num and season_num in cache["combined"]:
-            if episode_text:
-                episode_text = f"{episode_text} + COMBINED"
-            else:
-                episode_text = "COMBINED"
-
-        if is_series and season_num:
-
-            full_caption = SERIES_UPDATE_TEMPLATE.format(
-                title_display,
-                fmt,
-                quality_text,
-                lang_text,
-                year_text,
-                season_num,
-                episode_text or "N/A"
-            )
-
-        else:
-
-            full_caption = MOVIE_UPDATE_TEMPLATE.format(
-                title_display,
-                fmt,
-                quality_text,
-                lang_text,
-                year_text,
-            )
-
-        schedule_update(bot, file_name, full_caption, tmdb_data)
-
-    except Exception as e:
-        LOGGER.error(f"Error In Movie Update: {e}")
+    if is_series and season_num:
+        title_display = f"{title_display} S{season_num:02}"
+    elif not is_series and year_text != "N/A":
+        title_display = f"{title_display} {year_text}"
     
+    episodes = cache["seasons"].get(season_num, set())
+    episode_text = build_episode_range(episodes)
 
+    if season_num and season_num in cache["combined"]:
+        if episode_text:
+            episode_text = f"{episode_text} + COMBINED"
+        else:
+            episode_text = "COMBINED"
+
+    if is_series and season_num:
+
+        full_caption = SERIES_UPDATE_TEMPLATE.format(
+            title_display,
+            fmt,
+            quality_text,
+            lang_text,
+            year_text,
+            season_num,
+            episode_text or "N/A"
+        )
+
+    else:
+
+        full_caption = MOVIE_UPDATE_TEMPLATE.format(
+            title_display,
+            fmt,
+            quality_text,
+            lang_text,
+            year_text,
+        )
+
+    schedule_update(bot, file_name, full_caption, tmdb_data)
+
+except Exception as e:
+    LOGGER.error(f"Error In Movie Update: {e}")
+        
 def escape_html(text: str) -> str:
     if not text:
         return ""
