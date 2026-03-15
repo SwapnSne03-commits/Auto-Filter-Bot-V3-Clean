@@ -472,6 +472,29 @@ async def send_movie_update(bot, file_name, caption):
         tmdb_data = await fetch_tmdb_data(file_name, year)
 
         if not tmdb_data:
+
+            basic_title = file_name.replace(".", " ").strip()
+
+            if year:
+                basic_title = f"{basic_title} {year}"
+
+            caption = MOVIE_UPDATE_TEMPLATE.format(
+                basic_title,
+                fmt,
+                quality_text,
+                lang_text,
+                year or "N/A"
+            )
+
+            # safe fallback data
+            tmdb_data = {
+                "title": basic_title,
+                "release_date": "",
+                "poster_url": "",
+                "backdrop_url": ""
+            }
+
+            schedule_update(bot, cache_key, caption, tmdb_data)
             return
 
         quality_text = ", ".join(sorted(cache["qualities"])) or pixel
@@ -595,7 +618,9 @@ async def send_with_visual(bot, caption, tmdb_data, key):
 
         cache = get_cache(key)
 
-        visual_url = await get_best_visual(tmdb_data)
+        visual_url = None
+        if tmdb_data:
+            visual_url = await get_best_visual(tmdb_data)
 
         get_file = f'https://telegram.me/{temp.U_NAME}?start=getfile-{key.replace(" ","-")}'
 
