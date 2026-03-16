@@ -131,6 +131,8 @@ def clean_title(name: str) -> str:
     if not name:
         return ""
 
+    original = name
+
     name = name.lower()
 
     # remove urls
@@ -139,8 +141,10 @@ def clean_title(name: str) -> str:
     # remove telegram tags
     name = re.sub(r'@\w+', '', name)
 
-    # remove brackets content
-    name = re.sub(r'\[.*?\]|\(.*?\)|\{.*?\}', '', name)
+    # remove brackets content but keep year
+    name = re.sub(r'\[(.*?)\]', '', name)
+    name = re.sub(r'\{(.*?)\}', '', name)
+    name = re.sub(r'\((?!\d{4})(.*?)\)', '', name)
 
     # remove extension
     name = re.sub(r'\.(mkv|mp4|avi|webm)$', '', name)
@@ -150,7 +154,6 @@ def clean_title(name: str) -> str:
 
     words = name.split()
 
-    # words that indicate release info (title ends before these)
     stop_words = {
         "480p","720p","1080p","1440p","2160p","360p",
         "bluray","bdrip","webrip","web","webdl","web-dl","hdrip","dvdrip",
@@ -163,24 +166,30 @@ def clean_title(name: str) -> str:
     }
 
     title_words = []
+    year = None
 
     i = 0
     while i < len(words):
 
         word = words[i]
 
-        # skip resolution at beginning
+        # skip resolution if first word
         if not title_words and word in {"480p","720p","1080p","2160p"}:
             i += 1
             continue
 
-        # skip weird season prefix like SO 02 / S0 2
+        # capture year but don't add to title
+        if re.match(r'(19|20)\d{2}', word):
+            year = word
+            break
+
+        # skip weird season prefix
         if word in {"so","s","season"} and i+1 < len(words):
             if words[i+1].isdigit():
                 i += 2
                 continue
 
-        # stop when release info begins
+        # stop if release info starts
         if word in stop_words:
             break
 
@@ -189,10 +198,22 @@ def clean_title(name: str) -> str:
 
     title = " ".join(title_words)
 
-    # clean extra spaces
-    title = re.sub(r'\s+', ' ', title)
+    title = re.sub(r'\s+', ' ', title).strip()
 
-    return title.strip().title()
+    # fallback if cleaner fails
+    if not title or title in {"mkv","mp4","avi"}:
+
+        fallback = original.lower()
+
+        fallback = re.sub(r'\.(mkv|mp4|avi|webm)$', '', fallback)
+        fallback = re.sub(r'\b(480p|720p|1080p|2160p)\b', '', fallback)
+        fallback = re.sub(r'\b(x264|x265|hevc|h264|h265)\b', '', fallback)
+        fallback = re.sub(r'\b(bluray|webrip|web-dl|hdrip)\b', '', fallback)
+        fallback = re.sub(r'\s+', ' ', fallback)
+
+        return fallback.strip().title()
+
+    return title.title()
 
 def extract_title(name: str):
 
@@ -499,8 +520,9 @@ async def send_movie_update(bot, file_name, caption):
         caption = caption or ""
         text = f"{file_name} {caption}"
 
-        # CLEAN TITLE
-        title = extract_title(file_name)
+        # CLEAN TITLE (caption priority)
+        source_text = caption if caption else file_name
+        title = extract_title(source_text)
 
         # DETECT SEASON
         season = detect_season(text)
