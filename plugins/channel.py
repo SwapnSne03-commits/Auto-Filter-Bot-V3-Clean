@@ -85,6 +85,7 @@ LANGUAGES = {
     "pun":"Punjabi",
     "punjabi":"Punjabi",
     "ben":"Bengali",
+    "bangla":"Bengali",
     "bengali":"Bengali",
     "bangla":"Bangla",
     "guj":"Gujarati",
@@ -104,6 +105,7 @@ LANGUAGES = {
     "rus":"Russian",
     "russian":"Russian",
     "ara":"Arabic",
+    "thai":"Thai",
     "arabic":"Arabic",
 }
 
@@ -229,9 +231,10 @@ def detect_season(text: str):
 
     patterns = [
 
-        r's(?:eason)?[\s._-]*(\d{1,2})',   # S01 / Season 1
-        r'(\d{1,2})x(\d{1,2})',            # 1x01
-        r's(\d{1,2})e(\d{1,2})',           # S01E02
+        r'\bs(?:eason)?[\s._-]*(\d{1,2})\b',   # S01 / Season 1
+        r'\b(\d{1,2})x(\d{1,2})\b',            # 1x01
+        r'\bs(\d{1,2})e\d{1,2}\b',             # S01E02
+        r'\bseason[\s._-]*(\d{1,2})\b'         # Season 1
 
     ]
 
@@ -242,7 +245,7 @@ def detect_season(text: str):
         if match:
             return int(match.group(1))
 
-    return None
+    return None   
 
 def detect_year(text: str):
 
@@ -328,17 +331,21 @@ def is_already_notified(key):
 
 async def build_caption(title, season=None, year=None, languages=None, combined=False):
 
+    MAX_TITLE = 60
+
+    if len(title) > MAX_TITLE:
+        title = title[:MAX_TITLE].rstrip() + "..."
+
     # SERIES
     if season:
 
         if combined:
-            title_text = f"{title} S{season:02} COMPLETE"
+            title_text = f"{title} S{season:02} - COMBINED"
         else:
             title_text = f"{title} S{season:02}"
 
         tag = "#SERIES"
 
-    # MOVIE
     else:
 
         if year:
@@ -348,20 +355,15 @@ async def build_caption(title, season=None, year=None, languages=None, combined=
 
         tag = "#MOVIE"
 
-    # MAIN TITLE LINE
-    caption = f"✅ <b>{title_text}</b> <code>{tag}</code>"
+    caption = f"<b>✅ {title_text} {tag}</b>"
 
-    # LANGUAGE LINE
     if languages:
-        caption += f"\n\n🎙 {languages}"
+        caption += f"\n\n<blockquote><b>🎙 {languages}</b></blockquote>"
 
-    # SEARCH LINKS
-    try:
-        links = await build_search_links(title)
-        if links:
-            caption += f"\n\n⭐ {links}"
-    except:
-        pass
+    links = await build_search_links(title)
+
+    if links:
+        caption += f"\n\n{links}"
 
     return caption
 
@@ -370,42 +372,26 @@ async def build_search_links(title: str):
     if not title:
         return ""
 
-    imdb_query = title.replace(" ", "+")
-    tmdb_query = title.replace(" ", "%20")
-    lb_query = title.replace(" ", "-")
+    imdb = title.replace(" ", "+")
+    tmdb = title.replace(" ", "%20")
+    lb = title.replace(" ", "-").lower()
+    plex = title.replace(" ", "-").lower()
 
-    imdb_url = f"https://www.imdb.com/find?q={imdb_query}"
-    tmdb_url = f"https://www.themoviedb.org/search?query={tmdb_query}"
-    letterboxd_url = f"https://letterboxd.com/search/{lb_query}/"
+    imdb_url = f"https://www.imdb.com/find?q={imdb}"
+    tmdb_url = f"https://www.themoviedb.org/search?query={tmdb}"
+    lb_url = f"https://letterboxd.com/search/{lb}/"
+    plex_url = f"https://watch.plex.tv/search?q={plex}"
 
-    links = []
+    links = (
+        f'⭐ <a href="{imdb_url}">IMDb</a> | '
+        f'🎭 <a href="{tmdb_url}">TMDB</a> | '
+        f'🟢 <a href="{lb_url}">Letterboxd</a> | '
+        f'🍿 <a href="{plex_url}">Plex</a>'
+    )
 
-    try:
+    return links
 
-        async with aiohttp.ClientSession() as session:
-
-            # IMDb check
-            async with session.get(imdb_url, timeout=10) as r:
-                html = await r.text()
-                if "findResult" in html:
-                    links.append(f'<a href="{imdb_url}">IMDb</a>')
-
-            # TMDB check
-            async with session.get(tmdb_url, timeout=10) as r:
-                html = await r.text()
-                if "card v4 tight" in html or "results" in html:
-                    links.append(f'<a href="{tmdb_url}">TMDB</a>')
-
-            # Letterboxd check
-            async with session.get(letterboxd_url, timeout=10) as r:
-                html = await r.text()
-                if "poster-list" in html:
-                    links.append(f'<a href="{letterboxd_url}">Letterboxd</a>')
-
-    except:
-        pass
-
-    return " | ".join(links)
+    
 
 @Client.on_message(filters.chat(CHANNELS) & media_filter)
 async def media(bot, message):
