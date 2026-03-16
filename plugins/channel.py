@@ -203,15 +203,26 @@ def clean_title(name: str) -> str:
     # fallback if cleaner fails
     if not title or title in {"mkv","mp4","avi"}:
 
-        fallback = original.lower()
+        fallback = name  # use cleaned filename
 
+        # remove extension
         fallback = re.sub(r'\.(mkv|mp4|avi|webm)$', '', fallback)
-        fallback = re.sub(r'\b(480p|720p|1080p|2160p)\b', '', fallback)
-        fallback = re.sub(r'\b(x264|x265|hevc|h264|h265)\b', '', fallback)
-        fallback = re.sub(r'\b(bluray|webrip|web-dl|hdrip)\b', '', fallback)
-        fallback = re.sub(r'\s+', ' ', fallback)
 
-        return fallback.strip().title()
+        # remove resolution
+        fallback = re.sub(r'\b(480p|720p|1080p|1440p|2160p|360p)\b', '', fallback)
+
+        # remove codecs
+        fallback = re.sub(r'\b(x264|x265|hevc|h264|h265)\b', '', fallback)
+
+        # remove sources
+        fallback = re.sub(r'\b(bluray|bdrip|webrip|web-dl|hdrip|dvdrip)\b', '', fallback)
+
+        # remove audio tags
+        fallback = re.sub(r'\b(dual|multi|aac|ddp|atmos|dts)\b', '', fallback)
+
+        fallback = re.sub(r'\s+', ' ', fallback).strip()
+
+        return fallback.title()
 
     return title.title()
 
@@ -524,6 +535,9 @@ async def send_movie_update(bot, file_name, caption):
         source_text = caption if caption else file_name
         title = extract_title(source_text)
 
+        # prevent bad titles
+        if not title or title.lower() in {"mkv", "mp4", "avi", "video", "movie"}:
+            return
         # DETECT SEASON
         season = detect_season(text)
 
