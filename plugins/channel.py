@@ -60,6 +60,9 @@ COMBINED_KEYWORDS = [
     "complete season",
     "full series",
     "season pack",
+    "complete bengali series",
+    "complete Bangladeshi series",
+    "complete English series",
     "batch",
     "combined",
     "all episodes",
@@ -84,27 +87,22 @@ LANGUAGES = {
     "marathi":"Marathi",
     "pun":"Punjabi",
     "punjabi":"Punjabi",
+    "Panjabi":"Punjabi",
     "ben":"Bengali",
     "bangla":"Bengali",
     "bengali":"Bengali",
     "bangla":"Bangla",
     "guj":"Gujarati",
     "gujarati":"Gujarati",
-    "kor":"Korean",
     "korean":"Korean",
     "jap":"Japanese",
     "japanese":"Japanese",
     "chi":"Chinese",
     "chinese":"Chinese",
-    "spa":"Spanish",
     "spanish":"Spanish",
-    "fre":"French",
     "french":"French",
-    "ger":"German",
     "german":"German",
-    "rus":"Russian",
     "russian":"Russian",
-    "ara":"Arabic",
     "thai":"Thai",
     "arabic":"Arabic",
 }
@@ -266,37 +264,34 @@ async def detect_languages(text: str):
 
     text = text.lower()
 
+    # normalize separators
+    text = re.sub(r'[\[\]\(\)\{\}\+\|/]', ' ', text)
+
+    words = re.split(r'[\s,._\-]+', text)
+
     found = []
 
-    # split common separators
-    parts = re.split(r'[\s\-\+_/.,|]+', text)
+    for word in words:
 
-    for part in parts:
+        if word in LANGUAGES:
 
-        if part in LANGUAGES:
-            lang = LANGUAGES[part]
+            lang = LANGUAGES[word]
 
             if lang not in found:
                 found.append(lang)
 
-        else:
-
-            for key, value in LANGUAGES.items():
-
-                if key in part:
-
-                    if value not in found:
-                        found.append(value)
-
-    # dual audio fallback
-    if "dual" in text and len(found) == 1:
-        if "English" not in found:
-            found.append("English")
-
+    # Dual / Multi detection
     if not found:
+
+        if "dual" in text:
+            return "Dual Audio"
+
+        if "multi" in text:
+            return "Multi Audio"
+
         return None
 
-    return ", ".join(found[:3])
+    return ", ".join(found)
 
 def detect_combined(text: str):
 
@@ -306,6 +301,35 @@ def detect_combined(text: str):
     text = text.lower()
 
     for word in COMBINED_KEYWORDS:
+        if word in text:
+            return True
+
+    return False
+
+def detect_hall_print(text: str):
+
+    if not text:
+        return False
+
+    text = text.lower()
+
+    hall_words = [
+        "hdtc",
+        "hdts",
+        "hd cam"
+        "hdcam",
+        "camrip",
+        "cam",
+        "predvd",
+        "pre dvd",
+        "predvdrip",
+        "pre dvdrip",
+        "pre dvd rip"
+        "hdcam",
+        "telecine"
+    ]
+
+    for word in hall_words:
         if word in text:
             return True
 
@@ -329,7 +353,7 @@ def is_already_notified(key):
 
     return key in NOTIFIED_CACHE
 
-async def build_caption(title, season=None, year=None, languages=None, combined=False):
+async def build_caption(title, season=None, year=None, languages=None, combined=False, hall_print=False):
 
     MAX_TITLE = 60
 
@@ -356,6 +380,9 @@ async def build_caption(title, season=None, year=None, languages=None, combined=
         tag = "#MOVIE"
 
     caption = f"<b>✅ {title_text} {tag}</b>"
+
+    if hall_print:
+        caption += f"\n\n<blockquote><b>📸 Hall Print</b></blockquote>"
 
     if languages:
         caption += f"\n\n<blockquote><b>🎙 {languages}</b></blockquote>"
@@ -389,9 +416,7 @@ async def build_search_links(title: str):
         f'🍿 <a href="{plex_url}">Plex</a>'
     )
 
-    return links
-
-    
+    return links 
 
 @Client.on_message(filters.chat(CHANNELS) & media_filter)
 async def media(bot, message):
@@ -456,6 +481,9 @@ async def send_movie_update(bot, file_name, caption):
         # DETECT LANGUAGE
         languages = await detect_languages(text)
 
+        # DETECT HALL PRINT
+        hall_print = detect_hall_print(text)
+
         # CACHE KEY
         cache_key = build_cache_key(title, season, year)
 
@@ -472,7 +500,8 @@ async def send_movie_update(bot, file_name, caption):
             season=season,
             year=year,
             languages=languages,
-            combined=combined
+            combined=combined,
+            hall_print=hall_print
         )
 
         # SEND MESSAGE
@@ -482,7 +511,7 @@ async def send_movie_update(bot, file_name, caption):
         get_file = f"https://telegram.me/{temp.U_NAME}?start=getfile-{safe_title}"
 
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("📱 Get File", url=get_file)]
+            [InlineKeyboardButton("🔍 ᴄʟɪᴄᴋ ᴛᴏ sᴇᴀʀᴄʜ", url=get_file)]
         ])
 
         await bot.send_message(
@@ -491,6 +520,11 @@ async def send_movie_update(bot, file_name, caption):
             parse_mode=ParseMode.HTML,
             reply_markup=keyboard,
             disable_web_page_preview=True
+        )
+
+        await bot.send_sticker(
+            chat_id=MOVIE_UPDATE_CHANNEL,
+            sticker="CAACAgUAAxkBAAEKfJRpt4DB7iPqW3n96ZZYmAt1SbHTTQACMQADqZrmFhp_BxfZmAWsHgQ"
         )
     except Exception as e:
         LOGGER.error(f"Update Error: {e}")
