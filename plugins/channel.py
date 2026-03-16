@@ -139,40 +139,60 @@ def clean_title(name: str) -> str:
     # remove telegram tags
     name = re.sub(r'@\w+', '', name)
 
-    # remove brackets
+    # remove brackets content
     name = re.sub(r'\[.*?\]|\(.*?\)|\{.*?\}', '', name)
 
-    # remove audio 
-    name = re.sub(r'(hindi|english|tamil|telugu|malayalam|kannada|bengali|bangla|dual|multi)(\+|and)?(hindi|english|tamil|telugu|malayalam|kannada|bengali|bangla)?', '', name)
+    # remove extension
+    name = re.sub(r'\.(mkv|mp4|avi|webm)$', '', name)
 
-    # remove format 
-    name = re.sub(r'\.(mkv|mp4|avi)$', '', name)
+    # normalize separators
+    name = name.replace(".", " ").replace("_", " ").replace("-", " ")
 
-    # remove resolution
-    name = re.sub(r'\b(2160p|1440p|1080p|720p|480p|360p)\b', '', name)
+    words = name.split()
 
-    # remove codecs
-    name = re.sub(r'\b(x264|x265|hevc|h264|h265)\b', '', name)
+    # words that indicate release info (title ends before these)
+    stop_words = {
+        "480p","720p","1080p","1440p","2160p","360p",
+        "bluray","bdrip","webrip","web","webdl","web-dl","hdrip","dvdrip",
+        "x264","x265","hevc","h264","h265",
+        "aac","ddp","atmos","dts",
+        "dual","multi","org",
+        "hindi","english","tamil","telugu","malayalam","kannada","bengali","bangla",
+        "camrip","hdts","hdtc","predvd","dvd","tc","ts",
+        "mkv","mp4","avi"
+    }
 
-    # remove source
-    name = re.sub(r'\b(web[- ]dl|webrip|bluray|hdrip|dvdrip)\b', '', name)
+    title_words = []
 
-    # remove audio tags
-    name = re.sub(r'\b(ddp\d\.\d|aac|atmos)\b', '', name)
+    i = 0
+    while i < len(words):
 
-    # remove episode pattern
-    name = re.sub(r'\bs\d{1,2}e\d{1,2}\b', '', name)
+        word = words[i]
 
-    # remove year
-    name = re.sub(r'\b(19|20)\d{2}\b', '', name)
+        # skip resolution at beginning
+        if not title_words and word in {"480p","720p","1080p","2160p"}:
+            i += 1
+            continue
 
-    # replace dots
-    name = name.replace(".", " ")
+        # skip weird season prefix like SO 02 / S0 2
+        if word in {"so","s","season"} and i+1 < len(words):
+            if words[i+1].isdigit():
+                i += 2
+                continue
 
-    # remove extra spaces
-    name = re.sub(r'\s+', ' ', name)
+        # stop when release info begins
+        if word in stop_words:
+            break
 
-    return name.strip().title()
+        title_words.append(word)
+        i += 1
+
+    title = " ".join(title_words)
+
+    # clean extra spaces
+    title = re.sub(r'\s+', ' ', title)
+
+    return title.strip().title()
 
 def extract_title(name: str):
 
