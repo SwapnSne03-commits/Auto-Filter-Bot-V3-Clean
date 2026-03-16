@@ -387,14 +387,14 @@ async def build_caption(title, season=None, year=None, languages=None, combined=
     if languages:
         caption += f"\n\n<blockquote><b>🎙 {languages}</b></blockquote>"
 
-    links = await build_search_links(title)
+    links = await build_search_links(title, season)
 
     if links:
-        caption += f"\n\n{links}"
+        caption += f"\n\n<b>{links}</b>"
 
     return caption
 
-async def build_search_links(title: str):
+async def build_search_links(title: str, season=None):
 
     if not title:
         return ""
@@ -402,12 +402,19 @@ async def build_search_links(title: str):
     imdb = title.replace(" ", "+")
     tmdb = title.replace(" ", "%20")
     lb = title.replace(" ", "-").lower()
-    plex = title.replace(" ", "-").lower()
+
+    # remove year for plex slug
+    plex = re.sub(r'\b(19|20)\d{2}\b', '', title).strip().replace(" ", "-").lower()
 
     imdb_url = f"https://www.imdb.com/find?q={imdb}"
     tmdb_url = f"https://www.themoviedb.org/search?query={tmdb}"
     lb_url = f"https://letterboxd.com/search/{lb}/"
-    plex_url = f"https://watch.plex.tv/search?q={plex}"
+
+    # Plex condition
+    if season:
+        plex_url = f"https://watch.plex.tv/en-GB/show/{plex}"
+    else:
+        plex_url = f"https://watch.plex.tv/en-GB/movie/{plex}"
 
     links = (
         f'⭐ <a href="{imdb_url}">IMDb</a> | '
@@ -416,7 +423,7 @@ async def build_search_links(title: str):
         f'🍿 <a href="{plex_url}">Plex</a>'
     )
 
-    return links 
+    return links
 
 @Client.on_message(filters.chat(CHANNELS) & media_filter)
 async def media(bot, message):
@@ -511,7 +518,7 @@ async def send_movie_update(bot, file_name, caption):
         get_file = f"https://telegram.me/{temp.U_NAME}?start=getfile-{safe_title}"
 
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("🔍 ᴄʟɪᴄᴋ ᴛᴏ sᴇᴀʀᴄʜ", url=get_file)]
+            [InlineKeyboardButton("🔎 Tap To Search", url=get_file)]
         ])
 
         await bot.send_message(
@@ -522,10 +529,6 @@ async def send_movie_update(bot, file_name, caption):
             disable_web_page_preview=True
         )
 
-        await bot.send_sticker(
-            chat_id=MOVIE_UPDATE_CHANNEL,
-            sticker="CAACAgUAAxkBAAEKfJRpt4DB7iPqW3n96ZZYmAt1SbHTTQACMQADqZrmFhp_BxfZmAWsHgQ"
-        )
     except Exception as e:
         LOGGER.error(f"Update Error: {e}")
     
