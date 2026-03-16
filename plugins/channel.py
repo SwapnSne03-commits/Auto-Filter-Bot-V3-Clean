@@ -142,6 +142,12 @@ def clean_title(name: str) -> str:
     # remove brackets
     name = re.sub(r'\[.*?\]|\(.*?\)|\{.*?\}', '', name)
 
+    # remove audio 
+    name = re.sub(r'(hindi|english|tamil|telugu|malayalam|kannada|bengali|bangla|dual|multi)(\+|and)?(hindi|english|tamil|telugu|malayalam|kannada|bengali|bangla)?', '', name)
+
+    # remove format 
+    name = re.sub(r'\.(mkv|mp4|avi)$', '', name)
+
     # remove resolution
     name = re.sub(r'\b(2160p|1440p|1080p|720p|480p|360p)\b', '', name)
 
