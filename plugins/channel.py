@@ -154,6 +154,9 @@ def clean_title(name: str) -> str:
     name = re.sub(r'\b\d+p\d*\b', '', name, flags=re.IGNORECASE)
     name = re.sub(r'\b\d+fps\b', '', name, flags=re.IGNORECASE)
 
+    name = re.sub(r'\b\d{3,}\b', '', name)
+    name = re.sub(r'\b\d+(mb|gb)\b', '', name, flags=re.IGNORECASE)
+
     words = name.split()
 
     stop_words = {
