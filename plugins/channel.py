@@ -183,11 +183,13 @@ def clean_title(name: str) -> str:
             break
 
         # 🎯 stop at language
+        # ✅ language skip (DO NOT BREAK)
         if word in {
             "hindi","english","tamil","telugu",
             "malayalam","kannada","bengali","bangla"
         }:
-            break
+            i += 1
+            continue
 
         # 🎯 stop noisy encoding numbers
         if word.isdigit() and len(title_words) >= 2:
@@ -215,6 +217,8 @@ def clean_title(name: str) -> str:
         i += 1
 
     title = " ".join(title_words)
+    title = re.sub(r'\s+', ' ', title).strip()
+    title = re.sub(r'\b(hindi|english|tamil|telugu|bengali|bangla)\b', '', title)
     title = re.sub(r'\s+', ' ', title).strip()
 
     # 🔥 fallback (VERY IMPORTANT)
