@@ -1,5 +1,5 @@
 import asyncio
-from database import db
+from database.users_chats_db import db
 from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
 from pyrogram.errors import UserIsBlocked, PeerIdInvalid, MessageNotModified, FloodWait
