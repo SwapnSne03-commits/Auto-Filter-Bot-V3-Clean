@@ -126,6 +126,18 @@ def save_notification(key):
 
     NOTIFIED_CACHE[key] = datetime.now().timestamp()
 
+def normalize_cache_title(title: str):
+
+    title = title.lower()
+
+    # remove languages
+    title = re.sub(r'\b(hindi|english|tamil|telugu|bengali|bangla)\b', '', title)
+
+    # remove extra spaces
+    title = re.sub(r'\s+', ' ', title).strip()
+
+    return title
+
 def clean_title(name: str) -> str:
 
     if not name:
@@ -429,7 +441,7 @@ def detect_hall_print(text: str):
 
 def build_cache_key(title, season=None, year=None):
 
-    title = title.lower()
+    title = normalize_cache_title(title)
 
     if season:
         return f"{title}_s{season}"
