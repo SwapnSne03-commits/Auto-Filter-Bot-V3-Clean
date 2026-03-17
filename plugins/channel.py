@@ -151,6 +151,9 @@ def clean_title(name: str) -> str:
     # normalize separators
     name = name.replace(".", " ").replace("_", " ").replace("-", " ")
 
+    name = re.sub(r'\b\d+p\d*\b', '', name, flags=re.IGNORECASE)
+    name = re.sub(r'\b\d+fps\b', '', name, flags=re.IGNORECASE)
+
     words = name.split()
 
     stop_words = {
@@ -180,9 +183,9 @@ def clean_title(name: str) -> str:
             continue
 
         # 🎯 detect & stop at year
-        if re.search(r'(19|20)\d{2}', word):
+        if re.fullmatch(r'(19|20)\d{2}', word):
             year = word
-            title_words.append(word)   # 🔥 ADD THIS LINE
+            title_words.append(word)
             break
 
         # 🔥 NEW (resolution pattern)
