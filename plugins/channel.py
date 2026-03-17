@@ -132,16 +132,13 @@ def clean_title(name: str) -> str:
         return ""
 
     original = name
-
     name = name.lower()
 
-    # remove urls
+    # remove urls & tags
     name = re.sub(r'http\S+', '', name)
-
-    # remove telegram tags
     name = re.sub(r'@\w+', '', name)
 
-    # remove brackets content but keep year
+    # remove brackets but keep year
     name = re.sub(r'\[(.*?)\]', '', name)
     name = re.sub(r'\{(.*?)\}', '', name)
     name = re.sub(r'\((?!\d{4})(.*?)\)', '', name)
@@ -162,7 +159,9 @@ def clean_title(name: str) -> str:
         "dual","multi","org",
         "hindi","english","tamil","telugu","malayalam","kannada","bengali","bangla",
         "camrip","hdts","hdtc","predvd","dvd","tc","ts",
-        "mkv","mp4","avi"
+        "mkv","mp4","avi",
+        "hq","nf","amzn","dsnp",
+        "proper","extended","uncut","remastered"
     }
 
     title_words = []
@@ -173,23 +172,42 @@ def clean_title(name: str) -> str:
 
         word = words[i]
 
-        # skip resolution if first word
+        # skip resolution at beginning
         if not title_words and word in {"480p","720p","1080p","2160p"}:
             i += 1
             continue
 
-        # capture year but don't add to title
+        # 🎯 detect & stop at year
         if re.match(r'(19|20)\d{2}', word):
             year = word
             break
 
-        # skip weird season prefix
+        # 🎯 stop at language
+        if word in {
+            "hindi","english","tamil","telugu",
+            "malayalam","kannada","bengali","bangla"
+        }:
+            break
+
+        # 🎯 stop noisy encoding numbers
+        if word.isdigit() and len(title_words) >= 2:
+            break
+
+        # 🎯 skip anime/series season prefix
         if word in {"so","s","season"} and i+1 < len(words):
             if words[i+1].isdigit():
                 i += 2
                 continue
 
-        # stop if release info starts
+        # 🎯 skip episode markers (E01 / EP01)
+        if re.match(r'(e|ep)\d+', word):
+            break
+
+        # 🎯 skip "part", "vol"
+        if word in {"part","vol","volume"}:
+            break
+
+        # 🎯 stop at release info
         if word in stop_words:
             break
 
@@ -197,27 +215,17 @@ def clean_title(name: str) -> str:
         i += 1
 
     title = " ".join(title_words)
-
     title = re.sub(r'\s+', ' ', title).strip()
 
-    # fallback if cleaner fails
+    # 🔥 fallback (VERY IMPORTANT)
     if not title or title in {"mkv","mp4","avi"}:
 
-        fallback = name  # use cleaned filename
+        fallback = original.lower()
 
-        # remove extension
         fallback = re.sub(r'\.(mkv|mp4|avi|webm)$', '', fallback)
-
-        # remove resolution
         fallback = re.sub(r'\b(480p|720p|1080p|1440p|2160p|360p)\b', '', fallback)
-
-        # remove codecs
         fallback = re.sub(r'\b(x264|x265|hevc|h264|h265)\b', '', fallback)
-
-        # remove sources
         fallback = re.sub(r'\b(bluray|bdrip|webrip|web-dl|hdrip|dvdrip)\b', '', fallback)
-
-        # remove audio tags
         fallback = re.sub(r'\b(dual|multi|aac|ddp|atmos|dts)\b', '', fallback)
 
         fallback = re.sub(r'\s+', ' ', fallback).strip()
