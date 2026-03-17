@@ -141,7 +141,9 @@ def clean_title(name: str) -> str:
     # remove brackets but keep year
     name = re.sub(r'\[(.*?)\]', '', name)
     name = re.sub(r'\{(.*?)\}', '', name)
-    name = re.sub(r'\((?!\d{4})(.*?)\)', '', name)
+
+    # keep year but remove other bracket noise
+    name = re.sub(r'\(([^)]*)\)', lambda m: m.group(1) if re.search(r'(19|20)\d{2}', m.group(1)) else '', name)
 
     # remove extension
     name = re.sub(r'\.(mkv|mp4|avi|webm)$', '', name)
@@ -178,7 +180,7 @@ def clean_title(name: str) -> str:
             continue
 
         # 🎯 detect & stop at year
-        if re.match(r'(19|20)\d{2}', word):
+        if re.search(r'(19|20)\d{2}', word):
             year = word
             break
 
