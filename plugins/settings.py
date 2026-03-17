@@ -1,4 +1,5 @@
 import asyncio
+from database import db
 from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
 from pyrogram.errors import UserIsBlocked, PeerIdInvalid, MessageNotModified, FloodWait
@@ -1231,7 +1232,7 @@ async def delete_group_check_callback(client, query):
     except FloodWait as e:
         await asyncio.sleep(e.value)
     except Exception as e:
-        logging.error(f"Callback Error - {e}")
+        LOGGER.error(f"Callback Error - {e}")
         await query.answer("An error occurred!", show_alert=True)
 
 @Client.on_callback_query(filters.regex(r"^delete_group#"))
@@ -1251,9 +1252,9 @@ async def delete_group_callback(client, query):
         try:
             await client.leave_chat(int(grp_id))
         except Exception as e:
-            logging.error(f"Error leaving group {grp_id}: {e}")
+            LOGGER.error(f"Error leaving group {grp_id}: {e}")
     except FloodWait as e:
         await asyncio.sleep(e.value)
     except Exception as e:
-        logging.error(f"Callback Error - {e}")
+        LOGGER.error(f"Callback Error - {e}")
         await query.answer("An error occurred!", show_alert=True)
