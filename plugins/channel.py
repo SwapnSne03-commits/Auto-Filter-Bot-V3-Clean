@@ -225,11 +225,14 @@ def clean_title(name: str) -> str:
 
     title = " ".join(title_words)
     title = re.sub(r'\s+', ' ', title).strip()
-    title = re.sub(r'\b(hindi|english|tamil|telugu|bengali|bangla)\b', '', title)
+
+    title = re.sub(r'\b(hindi|english|tamil|telugu|bengali|bangla)\b', '', title, flags=re.IGNORECASE)
+
+    title = re.sub(r'\b\d+p\d*\b', '', title, flags=re.IGNORECASE)
+    title = re.sub(r'\b\d+fps\b', '', title, flags=re.IGNORECASE)
+
     title = re.sub(r'\s+', ' ', title).strip()
-    title = re.sub(r'\b\d+p\d*\b', '', title)
-    title = re.sub(r'\b\d+fps\b', '', title)
-    title = re.sub(r'\s+', ' ', title).strip()
+    title = title.strip(" ,.-")
 
     # 🔥 fallback (VERY IMPORTANT)
     if not title or title in {"mkv","mp4","avi"}:
