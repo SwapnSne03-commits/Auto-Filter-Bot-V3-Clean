@@ -182,7 +182,14 @@ def clean_title(name: str) -> str:
             year = word
             break
 
-        # 🎯 stop at language
+        # 🔥 NEW (resolution pattern)
+        if re.match(r'\d{3,4}p\d*', word):
+           break
+
+        # 🔥 NEW (fps pattern)
+        if re.match(r'\d+fps', word):
+            break
+
         # ✅ language skip (DO NOT BREAK)
         if word in {
             "hindi","english","tamil","telugu",
@@ -219,6 +226,9 @@ def clean_title(name: str) -> str:
     title = " ".join(title_words)
     title = re.sub(r'\s+', ' ', title).strip()
     title = re.sub(r'\b(hindi|english|tamil|telugu|bengali|bangla)\b', '', title)
+    title = re.sub(r'\s+', ' ', title).strip()
+    title = re.sub(r'\b\d+p\d*\b', '', title)
+    title = re.sub(r'\b\d+fps\b', '', title)
     title = re.sub(r'\s+', ' ', title).strip()
 
     # 🔥 fallback (VERY IMPORTANT)
