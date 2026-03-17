@@ -182,6 +182,7 @@ def clean_title(name: str) -> str:
         # 🎯 detect & stop at year
         if re.search(r'(19|20)\d{2}', word):
             year = word
+            title_words.append(word)   # 🔥 ADD THIS LINE
             break
 
         # 🔥 NEW (resolution pattern)
