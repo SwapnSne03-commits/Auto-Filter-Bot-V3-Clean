@@ -220,6 +220,10 @@ def clean_title(name: str) -> str:
     # normalize separators
     name = name.replace(".", " ").replace("_", " ").replace("-", " ")
 
+    # 🔥 REMOVE LANGUAGE BEFORE PROCESSING
+    name = re.sub(LANG_PATTERN, '', name, flags=re.IGNORECASE)
+    name = re.sub(r'\s+', ' ', name).strip()
+
     name = re.sub(r'\b\d+p\d*\b', '', name, flags=re.IGNORECASE)
     name = re.sub(r'\b\d+fps\b', '', name, flags=re.IGNORECASE)
 
