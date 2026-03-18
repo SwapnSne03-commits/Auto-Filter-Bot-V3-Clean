@@ -479,7 +479,7 @@ async def clean_all_fsub_duplicates(client, message):
         f"🚫 Direct Channels Removed: {direct_removed}"
     )
 
-@Client.on_message(filters.private & filters.text & ~filters.command)
+@Client.on_message(filters.private & filters.text & ~filters.regex(r"^/"))
 async def capture_req_channel(client, message):
 
     user_id = message.from_user.id
