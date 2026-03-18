@@ -225,7 +225,12 @@ def clean_title(name: str) -> str:
     years = list(re.finditer(r'(19|20)\d{2}', name))
 
     if years:
-        last_year = years[-1].group()
+        # if first word is year → ignore it
+        if years[0].start() == 0 and len(years) > 1:
+            last_year = years[-1].group()
+        else:
+            last_year = years[-1].group()
+
         idx = name.rfind(last_year) + len(last_year)
         name = name[:idx]
 
