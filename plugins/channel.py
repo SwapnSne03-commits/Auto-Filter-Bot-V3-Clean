@@ -221,6 +221,12 @@ def clean_title(name: str) -> str:
     # normalize separators
     name = name.replace(".", " ").replace("_", " ").replace("-", " ")
 
+    # 🔥 REMOVE LANGUAGE + NOISE BEFORE YEAR CUT
+    name = re.sub(r'\b(hindi|english|tamil|telugu|malayalam|kannada|bengali|bangla|marathi|punjabi|gujarati|arabic|spanish|french|german|russian|korean|japanese|chinese|urdu|assamese|odia)\b', '', name, flags=re.IGNORECASE)
+
+    name = re.sub(r'\b(camrip|hdts|hdtc|predvd|dvdscr|hdrip|webrip|webdl|web-dl|bluray)\b', '', name, flags=re.IGNORECASE)
+
+    name = re.sub(r'\s+', ' ', name).strip()
     # 🔥 MAIN FIX (Remove Everything aftet Year)
     years = list(re.finditer(r'(19|20)\d{2}', name))
 
