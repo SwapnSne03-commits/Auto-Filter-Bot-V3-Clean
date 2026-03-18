@@ -73,6 +73,7 @@ COMBINED_KEYWORDS = [
 
 LANGUAGES = {
     "hindi":"Hindi",
+    "हिंदी":"Hindi",
     "eng":"English",
     "english":"English",
     "tam":"Tamil",
@@ -90,6 +91,7 @@ LANGUAGES = {
     "Panjabi":"Punjabi",
     "ben":"Bengali",
     "bangla":"Bengali",
+    "বাংলা":"Bengali",
     "bengali":"Bengali",
     "bangla":"Bangla",
     "guj":"Gujarati",
@@ -106,6 +108,11 @@ LANGUAGES = {
     "thai":"Thai",
     "arabic":"Arabic",
 }
+
+def safe_text(text: str) -> str:
+    if not text:
+        return ""
+    return text.encode("utf-8", "ignore").decode("utf-8")
 
 def clean_cache():
 
@@ -619,6 +626,7 @@ async def send_movie_update(bot, file_name, caption):
             hall_print=hall_print
         )
 
+        caption_text = safe_text(caption_text)
         # SEND MESSAGE
         safe_title = re.sub(r'[^a-zA-Z0-9 ]', '', title)
         safe_title = safe_title.replace(" ", "-")
