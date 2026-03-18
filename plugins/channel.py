@@ -72,42 +72,92 @@ COMBINED_KEYWORDS = [
 ]
 
 LANGUAGES = {
-    "hindi":"Hindi",
-    "हिंदी":"Hindi",
-    "eng":"English",
-    "english":"English",
-    "tam":"Tamil",
-    "tamil":"Tamil",
-    "tel":"Telugu",
-    "telugu":"Telugu",
-    "mal":"Malayalam",
-    "malayalam":"Malayalam",
-    "kan":"Kannada",
-    "kannada":"Kannada",
-    "mar":"Marathi",
-    "marathi":"Marathi",
-    "pun":"Punjabi",
-    "punjabi":"Punjabi",
-    "Panjabi":"Punjabi",
-    "ben":"Bengali",
-    "bangla":"Bengali",
-    "বাংলা":"Bengali",
-    "bengali":"Bengali",
-    "bangla":"Bangla",
-    "guj":"Gujarati",
-    "gujarati":"Gujarati",
-    "korean":"Korean",
-    "jap":"Japanese",
-    "japanese":"Japanese",
-    "chi":"Chinese",
-    "chinese":"Chinese",
-    "spanish":"Spanish",
-    "french":"French",
-    "german":"German",
-    "russian":"Russian",
-    "thai":"Thai",
-    "arabic":"Arabic",
+
+    # Hindi
+    "hindi": "Hindi",
+    "hin": "Hindi",
+    "हिंदी": "Hindi",
+
+    # English
+    "english": "English",
+    "eng": "English",
+
+    # Tamil
+    "tamil": "Tamil",
+    "tam": "Tamil",
+
+    # Telugu
+    "telugu": "Telugu",
+    "tel": "Telugu",
+
+    # Malayalam
+    "malayalam": "Malayalam",
+    "mal": "Malayalam",
+
+    # Kannada
+    "kannada": "Kannada",
+    "kan": "Kannada",
+
+    # Marathi
+    "marathi": "Marathi",
+
+    # Punjabi
+    "punjabi": "Punjabi",
+    "pun": "Punjabi",
+    "panjabi": "Punjabi",
+
+    # Bengali
+    "bengali": "Bengali",
+    "ben": "Bengali",
+    "bangla": "Bengali",
+    "বাংলা": "Bengali",
+
+    # Gujarati
+    "gujarati": "Gujarati",
+    "guj": "Gujarati",
+
+    # Korean
+    "korean": "Korean",
+
+    # Japanese
+    "japanese": "Japanese",
+    "jap": "Japanese",
+
+    # Chinese
+    "chinese": "Chinese",
+    "chi": "Chinese",
+
+    # Spanish
+    "spanish": "Spanish",
+    "spa": "Spanish",
+
+    # French
+    "french": "French",
+
+    # German
+    "german": "German",
+
+    # Russian
+    "russian": "Russian",
+
+    # Thai
+    "thai": "Thai",
+
+    # Arabic
+    "arabic": "Arabic",
+    "ara": "Arabic",
 }
+
+LANG_WORDS = set(LANGUAGES.keys())
+
+LANG_WORDS.update({
+    "multi", "dual", "dub", "dubbed",
+    "multi-audio", "dual-audio",
+    "esub", "subs", "subbed",
+    "englishdub", "hindidub"
+})
+
+LANG_PATTERN = r'\b(' + '|'.join(LANG_WORDS) + r')\b'
 
 def safe_text(text: str) -> str:
     if not text:
@@ -254,7 +304,8 @@ def clean_title(name: str) -> str:
     title = " ".join(title_words)
     title = re.sub(r'\s+', ' ', title).strip()
 
-    title = re.sub(r'\b(hindi|english|tamil|telugu|bengali|bangla)\b', '', title, flags=re.IGNORECASE)
+    title = re.sub(LANG_PATTERN, '', title, flags=re.IGNORECASE)
+    title = title.replace("+", " ").replace("-", " ")
 
     title = re.sub(r'\b\d+p\d*\b', '', title, flags=re.IGNORECASE)
     title = re.sub(r'\b\d+fps\b', '', title, flags=re.IGNORECASE)
