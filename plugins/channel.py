@@ -376,7 +376,7 @@ def extract_title(name: str):
     name = re.sub(r'http\S+', '', name)
     name = re.sub(r'@\w+', '', name)
 
-    # ✅ KEEP YEAR inside brackets
+    # KEEP YEAR inside brackets
     name = re.sub(r'\[(.*?)\]|\{(.*?)\}', '', name)
     name = re.sub(
         r'\(([^)]*)\)',
@@ -396,7 +396,7 @@ def extract_title(name: str):
         "dual","multi","org"
     }
 
-    # 🔥 detect LAST YEAR (if exists)
+    # detect LAST YEAR
     years = [p for p in parts if re.fullmatch(r'(19|20)\d{2}', p)]
     last_year = years[-1] if years else None
 
@@ -404,29 +404,29 @@ def extract_title(name: str):
 
     for part in parts:
 
-        # 🎯 STOP at LAST YEAR (include it)
+        # STOP at last year
         if last_year and part == last_year:
-            title_parts.append(part)
             break
 
-        # 🎯 KEEP season (S01, S02)
+        # skip season
         if re.match(r's\d{1,2}', part):
-            title_parts.append(part)
             continue
 
-        # 🎯 skip episode markers
+        # skip episode
         if re.match(r'(ep|e)\d+', part):
             continue
 
-        # 🎯 language stop (only after title started)
-        if part in LANGUAGES and len(title_parts) > 0:
-            break
+        # 🔥 improved language check (partial match)
+        if len(title_parts) > 0:
+            for key in LANGUAGES:
+                if key in part:
+                    return " ".join(title_parts).title()
 
-        # 🎯 stop at video/meta info
+        # stop at meta info
         if part in stop_words:
             break
 
-        # 🎯 stop weird patterns
+        # stop weird patterns
         if re.match(r'\d+fps', part) or re.match(r'\d{3,4}p\d*', part):
             break
 
@@ -435,7 +435,7 @@ def extract_title(name: str):
     title = " ".join(title_parts)
     title = re.sub(r'\s+', ' ', title).strip()
 
-    # 🔥 fallback (no title extracted)
+    # fallback
     if not title:
         return original.strip().title()
 
@@ -494,25 +494,37 @@ async def detect_languages(text: str):
 
     for word in words:
 
+        # exact match
         if word in LANGUAGES:
-
             lang = LANGUAGES[word]
 
             if lang not in found:
                 found.append(lang)
 
-    # Dual / Multi detection
-    if not found:
+        # 🔥 partial match (important)
+        else:
+            for key, value in LANGUAGES.items():
+                if key in word:
+                    if value not in found:
+                        found.append(value)
 
-        if "dual" in text:
-            return "Dual Audio"
+    # 🔥 Dual / Multi logic (improved)
+    if found:
 
-        if "multi" in text:
-            return "Multi Audio"
+        if "dual" in text and len(found) == 1:
+            if "English" not in found:
+                found.append("English")
 
-        return None
+        return ", ".join(found)
 
-    return ", ".join(found)
+    # fallback
+    if "dual" in text:
+        return "Dual Audio"
+
+    if "multi" in text:
+        return "Multi Audio"
+
+    return None
 
 def detect_combined(text: str):
 
