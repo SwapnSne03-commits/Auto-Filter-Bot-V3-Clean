@@ -482,58 +482,75 @@ async def clean_all_fsub_duplicates(client, message):
 @Client.on_message(filters.private & filters.text & ~filters.command)
 async def capture_req_channel(client, message):
 
-    # 🔹 Must be in setting mode
-    if not hasattr(client, "REQ_FSUB_TEMP"):
-        return
-
     user_id = message.from_user.id
 
-    if user_id not in client.REQ_FSUB_TEMP:
+    # 🔹 Must be in setting mode
+    if not hasattr(client, "REQ_FSUB_TEMP") or user_id not in client.REQ_FSUB_TEMP:
         return
 
-    grp_id = client.REQ_FSUB_TEMP[user_id]
-    text = message.text.strip()
+    # 🔒 Prevent double trigger (IMPORTANT)
+    if not hasattr(client, "REQ_LOCK"):
+        client.REQ_LOCK = {}
 
-    # 🔹 Cancel Support
-    if text.lower() == "cancel":
+    if client.REQ_LOCK.get(user_id):
+        return
+
+    client.REQ_LOCK[user_id] = True
+
+    try:
+        grp_id = client.REQ_FSUB_TEMP[user_id]
+        text = message.text.strip()
+
+        # 🔹 Cancel Support
+        if text.lower() == "cancel":
+            client.REQ_FSUB_TEMP.pop(user_id, None)
+            return await message.reply("❌ Request FSUB Setup Cancelled")
+
+        # 🔹 Validate Channel ID
+        try:
+            channel_id = int(text)
+            if not str(channel_id).startswith("-100"):
+                raise ValueError
+        except:
+            return await message.reply("❌ Invalid Channel ID Format")
+
+        # 🔹 Check Bot Access
+        try:
+            chat = await client.get_chat(channel_id)
+            title = chat.title
+        except:
+            return await message.reply("❌ Bot Can't Access This Channel")
+
+        # 🔹 Load Existing Settings
+        settings = await get_settings(int(grp_id))
+        existing = settings.get("req_fsub_id") or []
+
+        if not isinstance(existing, list):
+            existing = [existing] if existing else []
+
+        # 🔹 Duplicate Check (user feedback)
+        if channel_id in existing:
+            client.REQ_FSUB_TEMP.pop(user_id, None)
+            return await message.reply("⚠️ Channel Already Added")
+
+        # 🔹 Safe Add (order + no duplicate)
+        existing.append(channel_id)
+        existing = list(dict.fromkeys(existing))
+
+        # 🔹 Save
+        await save_group_settings(int(grp_id), "req_fsub_id", existing)
+
+        # 🔹 Clear Temp
         client.REQ_FSUB_TEMP.pop(user_id, None)
-        return await message.reply("❌ Request FSUB Setup Cancelled")
 
-    # 🔹 Validate Channel ID
-    try:
-        channel_id = int(text)
-        if not str(channel_id).startswith("-100"):
-            raise ValueError
-    except:
-        return await message.reply("❌ Invalid Channel ID Format")
+        await message.reply(
+            f"✅ Request Join Channel Added Successfully\n\n"
+            f"Channel: {title}"
+        )
 
-    # 🔹 Check Bot Access (Very Important)
-    try:
-        chat = await client.get_chat(channel_id)
-        title = chat.title
-    except:
-        return await message.reply("❌ Bot Can't Access This Channel")
-
-    # 🔹 Load Existing Settings
-    settings = await get_settings(int(grp_id))
-    existing = settings.get("req_fsub_id") or []
-
-    if not isinstance(existing, list):
-        existing = [existing]
-
-    # 🔹 Safe Add (No duplicate ever)
-    existing = list(set(existing + [channel_id]))
-
-    # 🔹 Save
-    await save_group_settings(int(grp_id), "req_fsub_id", existing)
-
-    # 🔹 Clear Temp
-    client.REQ_FSUB_TEMP.pop(user_id, None)
-
-    await message.reply(
-        f"✅ Request Join Channel Added Successfully\n\n"
-        f"Channel: {title}"
-    )
+    finally:
+        # 🔓 Unlock user
+        client.REQ_LOCK.pop(user_id, None)
 
 @Client.on_callback_query(filters.regex(r'^confirm_remove_req'))
 async def confirm_remove_req(client, query):
