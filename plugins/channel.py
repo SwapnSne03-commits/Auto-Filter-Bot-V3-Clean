@@ -366,52 +366,80 @@ def extract_title(name: str):
     if not name:
         return ""
 
+    original = name
     name = name.lower()
 
-    # replace separators
-    name = name.replace(".", " ")
-    name = name.replace("_", " ")
-    name = name.replace("-", " ")
+    # normalize separators
+    name = name.replace(".", " ").replace("_", " ").replace("-", " ")
 
     # remove urls / tags
     name = re.sub(r'http\S+', '', name)
     name = re.sub(r'@\w+', '', name)
 
-    # remove brackets
-    name = re.sub(r'\[.*?\]|\(.*?\)|\{.*?\}', '', name)
+    # ✅ KEEP YEAR inside brackets
+    name = re.sub(r'\[(.*?)\]|\{(.*?)\}', '', name)
+    name = re.sub(
+        r'\(([^)]*)\)',
+        lambda m: m.group(1) if re.search(r'(19|20)\d{2}', m.group(1)) else '',
+        name
+    )
 
-    # stop words (video info)
-    stop_words = [
+    parts = name.split()
+
+    stop_words = {
         "2160p","1440p","1080p","720p","480p","360p",
         "x264","x265","hevc","h264","h265",
         "webdl","webrip","bluray","hdrip","dvdrip",
         "nf","amzn","dsnp","hdtv",
-        "aac","ddp","ddp5","atmos"
-    ]
+        "aac","ddp","ddp5","atmos",
+        "camrip","hdts","hdtc","predvd","dvdscr",
+        "dual","multi","org"
+    }
 
-    parts = name.split()
+    # 🔥 detect LAST YEAR (if exists)
+    years = [p for p in parts if re.fullmatch(r'(19|20)\d{2}', p)]
+    last_year = years[-1] if years else None
 
     title_parts = []
 
     for part in parts:
 
-        # stop if resolution etc appears
+        # 🎯 STOP at LAST YEAR (include it)
+        if last_year and part == last_year:
+            title_parts.append(part)
+            break
+
+        # 🎯 KEEP season (S01, S02)
+        if re.match(r's\d{1,2}', part):
+            title_parts.append(part)
+            continue
+
+        # 🎯 skip episode markers
+        if re.match(r'(ep|e)\d+', part):
+            continue
+
+        # 🎯 language stop (only after title started)
+        if part in LANGUAGES and len(title_parts) > 0:
+            break
+
+        # 🎯 stop at video/meta info
         if part in stop_words:
             break
 
-        # stop if year
-        if re.match(r'(19|20)\d{2}', part):
-            break
-
-        # stop if season
-        if re.match(r's\d{1,2}', part):
+        # 🎯 stop weird patterns
+        if re.match(r'\d+fps', part) or re.match(r'\d{3,4}p\d*', part):
             break
 
         title_parts.append(part)
 
     title = " ".join(title_parts)
+    title = re.sub(r'\s+', ' ', title).strip()
 
-    return title.strip().title()
+    # 🔥 fallback (no title extracted)
+    if not title:
+        return original.strip().title()
+
+    return title.title()
 
 def detect_season(text: str):
 
@@ -671,8 +699,9 @@ async def send_movie_update(bot, file_name, caption):
         title = extract_title(source_text)
 
         # prevent bad titles
-        if not title or title.lower() in {"mkv", "mp4", "avi", "video", "movie"}:
+        if not title or len(title.split()) == 0 or title.lower() in {"mkv", "mp4", "avi", "video", "movie"}:
             return
+
         # DETECT SEASON
         season = detect_season(text)
 
