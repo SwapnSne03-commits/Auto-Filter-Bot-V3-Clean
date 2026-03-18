@@ -105,6 +105,7 @@ LANGUAGES = {
     "punjabi": "Punjabi",
     "pun": "Punjabi",
     "panjabi": "Punjabi",
+    "Assamese": "Assamese",
 
     # Bengali
     "bengali": "Bengali",
@@ -220,6 +221,16 @@ def clean_title(name: str) -> str:
     # normalize separators
     name = name.replace(".", " ").replace("_", " ").replace("-", " ")
 
+    # 🔥 MAIN FIX (Remove Everything aftet Year)
+    years = list(re.finditer(r'(19|20)\d{2}', name))
+
+    if years:
+        last_year = years[-1].group()
+        idx = name.rfind(last_year) + len(last_year)
+        name = name[:idx]
+
+    name = name.replace("(", "").replace(")", "")
+
     # 🔥 REMOVE LANGUAGE BEFORE PROCESSING
     name = re.sub(LANG_PATTERN, '', name, flags=re.IGNORECASE)
     name = re.sub(r'\s+', ' ', name).strip()
@@ -259,7 +270,7 @@ def clean_title(name: str) -> str:
             continue
 
         # 🎯 detect & stop at year
-        if re.fullmatch(r'(19|20)\d{2}', word):
+        if re.fullmatch(r'(19|20)\d{2}', word) and i != 0:
             year = word
             title_words.append(word)
             break
@@ -308,6 +319,9 @@ def clean_title(name: str) -> str:
     title = " ".join(title_words)
     title = re.sub(r'\s+', ' ', title).strip()
 
+    if len(title_words) == 0:
+        return original.title()
+
     title = re.sub(LANG_PATTERN, '', title, flags=re.IGNORECASE)
     title = title.replace("+", " ").replace("-", " ")
 
@@ -316,6 +330,8 @@ def clean_title(name: str) -> str:
 
     title = re.sub(r'\s+', ' ', title).strip()
     title = title.strip(" ,.-")
+
+    title = title.title() # Nice UI
 
     # 🔥 fallback (VERY IMPORTANT)
     if not title or title in {"mkv","mp4","avi"}:
