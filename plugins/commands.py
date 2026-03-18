@@ -521,7 +521,7 @@ async def start(client, message):
             if res:
                 btn.append([
                     InlineKeyboardButton(
-                        f"⛔️ {i}. {res['title']} ⛔️",
+                        f"{i}. Jᴏɪɴ ➳ {res['title']}",
                         url=res['url']
                     )
                 ])
@@ -530,7 +530,7 @@ async def start(client, message):
         if btn:
             btn.append([
                 InlineKeyboardButton(
-                    "♻️ ᴛʀʏ ᴀɢᴀɪɴ ♻️",
+                    "↻ Tʀʏ Aɢᴀɪɴ",
                     url=f"https://t.me/{temp.U_NAME}?start=multifile_{message.from_user.id}"
                 )
             ])
@@ -792,7 +792,7 @@ async def start(client, message):
             if res:
                 btn.append([
                     InlineKeyboardButton(
-                        f"⛔️ {i}. {res['title']} ⛔️",
+                        f"{i}. Jᴏɪɴ ➳ {res['title']}",
                         url=res['url']
                     )
                 ])
@@ -801,7 +801,7 @@ async def start(client, message):
         if btn:
             btn.append([
                 InlineKeyboardButton(
-                    "♻️ ᴛʀʏ ᴀɢᴀɪɴ ♻️",
+                    "↻ Tʀʏ Aɢᴀɪɴ",
                     url=f"https://t.me/{temp.U_NAME}?start={message.command[1]}"
                 )
             ])
