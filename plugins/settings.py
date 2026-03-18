@@ -284,6 +284,11 @@ async def fsub_settings(client, query):
     fsub_ids = settings.get('fsub_id')
     req_fsub_id = settings.get('req_fsub_id')
 
+    if isinstance(fsub_ids, list):
+        fsub_ids = list(dict.fromkeys(fsub_ids))
+
+    if isinstance(req_fsub_id, list):
+        req_fsub_id = list(dict.fromkeys(req_fsub_id))
     # 🔹 Direct Fsub Text
     if fsub_ids and isinstance(fsub_ids, list):
         fsub_text = "\n".join([f"<code>{id}</code>" for id in fsub_ids])
@@ -365,6 +370,7 @@ async def remove_req_fsub_ui(client, query):
     settings = await get_settings(int(grp_id))
 
     req_fsubs = settings.get("req_fsub_id", [])
+    req_fsubs = list(dict.fromkeys(req_fsubs))
 
     if not isinstance(req_fsubs, list):
         req_fsubs = [req_fsubs] if req_fsubs else []
@@ -473,7 +479,7 @@ async def clean_all_fsub_duplicates(client, message):
         f"🚫 Direct Channels Removed: {direct_removed}"
     )
 
-@Client.on_message(filters.private & filters.text)
+@Client.on_message(filters.private & filters.text & ~filters.command)
 async def capture_req_channel(client, message):
 
     # 🔹 Must be in setting mode
@@ -515,17 +521,8 @@ async def capture_req_channel(client, message):
     if not isinstance(existing, list):
         existing = [existing]
 
-    # 🔹 Duplicate Safe
-    if channel_id in existing:
-        client.REQ_FSUB_TEMP.pop(user_id, None)
-        return await message.reply("⚠️ Channel Already Added")
-
-    # 🔹 Append Clean
-    if channel_id not in existing:
-        existing.append(channel_id)
-
-    # 🔹 Remove Duplicates Safety Layer
-    existing = list(dict.fromkeys(existing))
+    # 🔹 Safe Add (No duplicate ever)
+    existing = list(set(existing + [channel_id]))
 
     # 🔹 Save
     await save_group_settings(int(grp_id), "req_fsub_id", existing)
@@ -655,8 +652,7 @@ async def set_fsub_ui(client, query):
                  current_fsub = [current_fsub]
              else:
                  current_fsub = []
-        if channel_id not in current_fsub:
-            current_fsub.append(channel_id)
+        current_fsub = list(set(current_fsub + [channel_id]))
 
         await save_group_settings(int(grp_id), 'fsub_id', current_fsub)
         await m.delete()
