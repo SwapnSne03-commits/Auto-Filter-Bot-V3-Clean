@@ -393,7 +393,7 @@ def extract_title(name: str):
         "nf","amzn","dsnp","hdtv",
         "aac","ddp","ddp5","atmos",
         "camrip","hdts","hdtc","predvd","dvdscr",
-        "dual","multi","org"
+        "dual","multi","org","combined","complete"
     }
 
     # detect LAST YEAR
