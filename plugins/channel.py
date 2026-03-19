@@ -413,7 +413,7 @@ def extract_title(name: str):
             continue
 
         # skip episode
-        if re.match(r'(ep|e)\d+', part):
+        if re.fullmatch(r'(ep\d+|e\d+)', part):
             continue
 
         # 🔥 improved language check (partial match)
@@ -494,6 +494,8 @@ async def detect_languages(text: str):
 
     for word in words:
 
+        if len(word) <= 2:
+            continue
         # exact match
         if word in LANGUAGES:
             lang = LANGUAGES[word]
@@ -504,7 +506,7 @@ async def detect_languages(text: str):
         # 🔥 partial match (important)
         else:
             for key, value in LANGUAGES.items():
-                if key in word:
+                if word == key or word.startswith(key) or word.endswith(key):
                     if value not in found:
                         found.append(value)
 
