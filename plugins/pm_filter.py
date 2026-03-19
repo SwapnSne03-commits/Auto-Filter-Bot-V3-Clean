@@ -3362,8 +3362,29 @@ async def auto_filter(client, msg, spoll=False):
 
                 # 2️⃣ Season → Title
                 if not files and is_series_request:
-                    # 🔥 FIX: convert "season 2" → "s2"
-                    search = re.sub(r'season\s*(\d{1,2})', r's\1', search, flags=re.I)
+                    # 🔥 STEP 1: season → s2 (robust)
+                    search = re.sub(r'season[\s\-\:\._]*?(\d{1,2})', r's\1', search, flags=re.I)
+
+                    # 🔥 STEP 2: s2 → s02
+                    search = re.sub(r'\bs(\d)\b', r's0\1', search, flags=re.I)
+
+                    # 🔥 STEP 3: try with s02 (main)
+                    files, offset, total_results = await get_search_results(
+                        message.chat.id, search, offset=0, filter=True
+                    )
+
+                    # 🔥 STEP 4: যদি না পায় → season remove করে শুধু number দিয়ে try
+                    if not files:
+                        alt_search = re.sub(r'season[\s\-\:\._]*?(\d{1,2})', r'\1', search, flags=re.I)
+
+                        if alt_search != search:
+                            files, offset, total_results = await get_search_results(
+                                message.chat.id, alt_search, offset=0, filter=True
+                            )
+
+                            if files:
+                                search = alt_search
+                if not files:
                     title_only = re.sub(
                         r"(s\d{1,2}\s*e\d{1,3}|s\d{1,2}e\d{1,3}|s\d{1,2})",
                         "",
