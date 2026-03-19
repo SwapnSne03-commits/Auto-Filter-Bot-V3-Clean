@@ -2229,7 +2229,7 @@ async def advantage_spoll_choker(bot, query):
 	
         key = f"{chat_id}-{user_msg.id}"
 
-        temp.GETALL[key] = all_files
+        temp.GETALL[key] = all_files[:70]
         temp.SMART_FILTERS[key] = {
             "languages": sorted(smart_languages),
             "seasons": sorted(smart_seasons),
