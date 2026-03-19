@@ -2165,8 +2165,8 @@ async def advantage_spoll_choker(bot, query):
 
         files = files or []
         all_files = list(files)
-        if not files:
-            return
+        #if not files:
+            #files = []
 
         next_offset = offset
 
@@ -2237,13 +2237,14 @@ async def advantage_spoll_choker(bot, query):
             "combined": smart_combined
 	    }
 
-    if files:
+    valid_files = [f for f in all_files if getattr(f, "file_id", None)]
+
+    if valid_files:
         if not user_msg:
             return await query.answer("Request expired ❌", show_alert=True)
 
-        k = (movie, files, offset, total_results)
+        k = (movie, valid_files, offset, total_results)
         await auto_filter(bot, user_msg, k)
-
     else:
         reqstr1 = query.from_user.id if query.from_user else 0
         reqstr = await bot.get_users(reqstr1)
