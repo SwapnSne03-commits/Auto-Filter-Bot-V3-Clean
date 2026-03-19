@@ -2229,7 +2229,7 @@ async def advantage_spoll_choker(bot, query):
 	
         key = f"{chat_id}-{user_msg.id}"
 
-        temp.GETALL[key] = all_files[:70]
+        temp.GETALL[key] = all_files
         temp.SMART_FILTERS[key] = {
             "languages": sorted(smart_languages),
             "seasons": sorted(smart_seasons),
@@ -3652,6 +3652,8 @@ async def auto_filter(client, msg, spoll=False):
     else:
         if key not in temp.GETALL:
             temp.GETALL[key] = files
+
+    files = files[:10]
     temp.SHORT[message.from_user.id] = message.chat.id
     if settings.get('button'):
         btn = [
