@@ -416,11 +416,9 @@ def extract_title(name: str):
         if re.fullmatch(r'(ep\d+|e\d+)', part):
             continue
 
-        # 🔥 improved language check (partial match)
-        if len(title_parts) > 0:
-            for key in LANGUAGES:
-                if key in part:
-                    return " ".join(title_parts).title()
+        # stop if actual language word আসে
+        if part in LANGUAGES and len(title_parts) > 0:
+            break
 
         # stop at meta info
         if part in stop_words:
