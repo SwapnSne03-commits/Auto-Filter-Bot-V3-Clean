@@ -3191,7 +3191,7 @@ async def auto_filter(client, msg, spoll=False):
 
     query = (msg.text or "").strip()
 
-    if not re.match(r"^[a-zA-Z0-9\s\-\.\']+$", query):
+    if not re.match(r'^[\w\s\-\.:\;!"/\']+$', query):
         warn = await msg.reply_text(
             "📌 <b>ᴘʟᴇᴀsᴇ sᴇᴀʀᴄʜ ᴜsɪɴɢ ɴᴏʀᴍᴀʟ ᴇɴɢʟɪsʜ ʟᴇᴛᴛᴇʀs.</b>",
             parse_mode=enums.ParseMode.HTML
