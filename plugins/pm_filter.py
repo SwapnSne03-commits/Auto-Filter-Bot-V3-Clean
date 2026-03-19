@@ -3362,8 +3362,10 @@ async def auto_filter(client, msg, spoll=False):
 
                 # 2️⃣ Season → Title
                 if not files and is_series_request:
+                    # 🔥 FIX: convert "season 2" → "s2"
+                    search = re.sub(r'season\s*(\d{1,2})', r's\1', search, flags=re.I)
                     title_only = re.sub(
-                        r"(s\d{1,2}\s*e\d{1,3}|s\d{1,2}e\d{1,3}|s\d{1,2}|season\s*\d{1,2}|\b\d{1,2}\b)",
+                        r"(s\d{1,2}\s*e\d{1,3}|s\d{1,2}e\d{1,3}|s\d{1,2})",
                         "",
                         search,
                         flags=re.IGNORECASE
