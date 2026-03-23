@@ -3253,7 +3253,7 @@ async def auto_filter(client, msg, spoll=False):
                 return
             if not is_meaningful_query(search):
                 return
-            if re.fullmatch(r'\d+(\.\d+)?', search):
+            if re.fullmatch(r'\d+(\.\d+)?', search.strip()):
                 return
             m=await message.reply_text(f'<b><i>ᴡᴀɪᴛ {message.from_user.mention}, sᴇᴀʀᴄʜɪɴɢ ʏᴏᴜʀ ǫᴜᴇʀʏ: <i>{search}...</i></b>', reply_to_message_id=message.id)
             
