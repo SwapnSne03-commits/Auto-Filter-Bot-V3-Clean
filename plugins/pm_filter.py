@@ -3192,9 +3192,9 @@ async def auto_filter(client, msg, spoll=False):
 
     query = (msg.text or "").strip()
 
-    if not re.match(r'^[\w\s\-\.:\;!"/\']+$', query):
+    if not re.match(r'^[\w\s\-\.\:\;\!\"\/\'\(\)]+$', query):
         warn = await msg.reply_text(
-            "📌 <b>ᴘʟᴇᴀsᴇ sᴇᴀʀᴄʜ ᴜsɪɴɢ ɴᴏʀᴍᴀʟ ᴇɴɢʟɪsʜ ʟᴇᴛᴛᴇʀs.</b>",
+            "📌 <b>ᴜsᴇ ɴᴏʀᴍᴀʟ ᴇɴɢʟɪsʜ ʟᴇᴛᴛᴇʀs ᴏɴʟʏ.\nᴀᴠᴏɪᴅ ᴏᴛʜᴇʀ ғᴏɴᴛs ᴏʀ ᴜɴᴜsᴜᴀʟ sʏᴍʙᴏʟs.</b>",
             parse_mode=enums.ParseMode.HTML
 		)
         asyncio.create_task(delete_msg(warn, 8, msg))
@@ -3252,6 +3252,8 @@ async def auto_filter(client, msg, spoll=False):
             if not re.search(r'[a-zA-Z0-9]', search): #ignore non english request 
                 return
             if not is_meaningful_query(search):
+                return
+            if re.fullmatch(r'\d+(\.\d+)?', search):
                 return
             m=await message.reply_text(f'<b><i>ᴡᴀɪᴛ {message.from_user.mention}, sᴇᴀʀᴄʜɪɴɢ ʏᴏᴜʀ ǫᴜᴇʀʏ: <i>{search}...</i></b>', reply_to_message_id=message.id)
             
