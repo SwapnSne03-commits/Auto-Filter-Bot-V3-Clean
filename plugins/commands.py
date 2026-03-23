@@ -43,7 +43,7 @@ LANGUAGE_PATTERNS = {
     "Malayalam": ["mal", "malayalam"],
     "Kannada": ["kan", "kannada"],
     "Marathi": ["mar", "marathi"],
-    "Punjabi": ["pun", "punjabi"],
+    "Punjabi": ["pun", "punjabi", "Panjabi"],
     "Gujarati": ["guj", "gujarati"],
     "Urdu": ["urdu"],
 
@@ -381,8 +381,8 @@ async def send_file_pipeline(client, query, file_id, grp_id):
         ]
     else:
         btn = [
-            [InlineKeyboardButton('📌 ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ', url=UPDATE_CHANNEL_LNK)],
-            [InlineKeyboardButton("📑 ᴠɪᴇᴡ ᴀᴜᴅɪᴏ/sᴜʙᴛɪᴛʟᴇ ᴅᴇᴛᴀɪʟs", callback_data="trackinfo")]
+            [InlineKeyboardButton('📌 ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ', url=UPDATE_CHANNEL_LNK)]
+            #[InlineKeyboardButton("📑 ᴠɪᴇᴡ ᴀᴜᴅɪᴏ/sᴜʙᴛɪᴛʟᴇ ᴅᴇᴛᴀɪʟs", callback_data="trackinfo")]
         ]
 
     try:
@@ -907,8 +907,8 @@ async def start(client, message):
                 ]
             else:
                 btn = [
-                    [InlineKeyboardButton('📌 ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ', url=UPDATE_CHANNEL_LNK)],
-                    [InlineKeyboardButton("📑 ᴠɪᴇᴡ ᴀᴜᴅɪᴏ/sᴜʙᴛɪᴛᴇʟ ᴅᴇᴛᴀɪʟs", callback_data="trackinfo")]
+                    [InlineKeyboardButton('📌 ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ', url=UPDATE_CHANNEL_LNK)]
+                    #[InlineKeyboardButton("📑 ᴠɪᴇᴡ ᴀᴜᴅɪᴏ/sᴜʙᴛɪᴛᴇʟ ᴅᴇᴛᴀɪʟs", callback_data="trackinfo")]
                 ]
             msg = await client.send_cached_media(
                 chat_id=message.from_user.id,
@@ -948,8 +948,8 @@ async def start(client, message):
                 ]
             else:
                 btn = [
-                    [InlineKeyboardButton('📌 ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ', url=UPDATE_CHANNEL_LNK)],
-                    [InlineKeyboardButton("📑 ᴠɪᴇᴡ ᴀᴜᴅɪᴏ/sᴜʙᴛɪᴛᴇʟ ᴅᴇᴛᴀɪʟs", callback_data="trackinfo")]
+                    [InlineKeyboardButton('📌 ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ', url=UPDATE_CHANNEL_LNK)]
+                    #[InlineKeyboardButton("📑 ᴠɪᴇᴡ ᴀᴜᴅɪᴏ/sᴜʙᴛɪᴛᴇʟ ᴅᴇᴛᴀɪʟs", callback_data="trackinfo")]
                 ]
             msg = await client.send_cached_media(
                 chat_id=message.from_user.id,
@@ -1040,8 +1040,8 @@ async def start(client, message):
         ]
     else:
         btn = [
-            [InlineKeyboardButton('📌 ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ', url=UPDATE_CHANNEL_LNK)],
-            [InlineKeyboardButton("📑 ᴠɪᴇᴡ ᴀᴜᴅɪᴏ/sᴜʙᴛɪᴛᴇʟ ᴅᴇᴛᴀɪʟs", callback_data="trackinfo")]
+            [InlineKeyboardButton('📌 ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ', url=UPDATE_CHANNEL_LNK)]
+            #[InlineKeyboardButton("📑 ᴠɪᴇᴡ ᴀᴜᴅɪᴏ/sᴜʙᴛɪᴛᴇʟ ᴅᴇᴛᴀɪʟs", callback_data="trackinfo")]
         ]
     msg = await client.send_cached_media(
         chat_id=message.from_user.id,
