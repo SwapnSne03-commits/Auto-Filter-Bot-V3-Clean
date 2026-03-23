@@ -275,7 +275,7 @@ Nᴀᴍᴇ : {}
 
 Mᴇꜱꜱᴀɢᴇ : <code>{}</code>"""
     
-    CAPTION = """<b>{file_caption}\n{metadata}\nᴊᴏɪɴ ᴜs: <a href="https://t.me/graduate_movies">[@Graduate_Movies]</a></b>"""
+    CAPTION = """<b>{file_name}\n\nᴊᴏɪɴ ᴜs:<a href="https://t.me/graduate_movies">[@Graduate_Movies]</a></b>"""
 
     IMDB_TEMPLATE_TXT = """
 🏷 <b>ᴛɪᴛʟᴇ: <a href={url}>{title}</a></b>
