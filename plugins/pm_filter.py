@@ -478,12 +478,13 @@ async def next_page(bot, query):
                     callback_data=f"jump#{key}#{current_page}#{total_pages}#{offset}"
                 )
             ])
+        req = query.from_user.id
         orig_offset = temp.JUMP_BACK.get((req, key))
 
         if orig_offset is not None and orig_offset != offset:
             btn.append([
                 InlineKeyboardButton(
-                    "↭ ʙᴀᴄᴋ ᴛᴏ ᴍᴀɪɴ ᴘᴀɢᴇ",
+                    "↭ ʙᴀᴄᴋ ᴛᴏ ᴘʀᴇᴠɪᴏᴜs ᴘᴀɢᴇ",
                     callback_data=f"next_{req}_{key}_{orig_offset}"
                 )
             ])
@@ -530,7 +531,7 @@ async def next_page(bot, query):
 async def jump_page_handler(client, query: CallbackQuery):
     try:
         _, key, current_page, total_pages, offset = query.data.split("#")
-
+        req = query.from_user.id
         # 👉 save original page before jump
         temp.JUMP_BACK[(req, key)] = offset
         current_page = int(current_page)
@@ -1260,6 +1261,16 @@ async def filter_qualities_cb_handler(client: Client, query: CallbackQuery):
                     callback_data=f"jump#{key}#{current_page}#{total_pages}#{offset}"
                 )
             ])
+        req = query.from_user.id
+        orig_offset = temp.JUMP_BACK.get((req, key))
+
+        if orig_offset is not None and orig_offset != offset:
+            btn.append([
+                InlineKeyboardButton(
+                    "↭ ʙᴀᴄᴋ ᴛᴏ ᴘʀᴇᴠɪᴏᴜꜱ ᴘᴀɢᴇ",
+                    callback_data=f"next_{req}_{key}_{orig_offset}"
+                )
+            ])
         if qual != "homepage":
             btn.append([
                 InlineKeyboardButton(
@@ -1653,7 +1664,17 @@ async def filter_language_cb_handler(client: Client, query: CallbackQuery):
                     callback_data=f"jump#{key}#{current_page}#{total_pages}#{offset}"
                 )
             ])
-	
+
+        req = query.from_user.id
+        orig_offset = temp.JUMP_BACK.get((req, key))
+
+        if orig_offset is not None and orig_offset != offset:
+            btn.append([
+                InlineKeyboardButton(
+                    "↭ ʙᴀᴄᴋ ᴛᴏ ᴘʀᴇᴠɪᴏᴜꜱ ᴘᴀɢᴇ",
+                    callback_data=f"next_{req}_{key}_{orig_offset}"
+                )
+            ])
         # 🔙 Back to main file list
         if lang != "homepage":
             btn.append([
@@ -2038,6 +2059,17 @@ async def filter_season_cb_handler(client: Client, query: CallbackQuery):
                     callback_data=f"jump#{key}#{current_page}#{total_pages}#{offset}"
                 )
             ])
+
+        req = query.from_user.id
+        orig_offset = temp.JUMP_BACK.get((req, key))
+
+        if orig_offset is not None and orig_offset != offset:
+            btn.append([
+                InlineKeyboardButton(
+                    "↭ ʙᴀᴄᴋ ᴛᴏ ᴘʀᴇᴠɪᴏᴜꜱ ᴘᴀɢᴇ",
+                    callback_data=f"next_{req}_{key}_{orig_offset}"
+                )
+            ])
         if seas != "homepage":
             btn.append([
                 InlineKeyboardButton(
@@ -2232,6 +2264,17 @@ async def combined_filter(client, query):
                 InlineKeyboardButton(
                     "🔢 ᴊᴜᴍᴘ ᴘᴀɢᴇ",
                     callback_data=f"jump#{key}#{current_page}#{total_pages}#{offset}"
+                )
+            ])
+
+        req = query.from_user.id
+        orig_offset = temp.JUMP_BACK.get((req, key))
+
+        if orig_offset is not None and orig_offset != offset:
+            btn.append([
+                InlineKeyboardButton(
+                    "↭ ʙᴀᴄᴋ ᴛᴏ ᴘʀᴇᴠɪᴏᴜꜱ ᴘᴀɢᴇ",
+                    callback_data=f"next_{req}_{key}_{orig_offset}"
                 )
             ])
         # 🔙 BACK TO MAIN PAGE
