@@ -535,12 +535,16 @@ async def next_page(bot, query):
 async def jump_page_handler(client, query: CallbackQuery):
     try:
         _, key, current_page, total_pages, offset = query.data.split("#")
+
         req = query.from_user.id
-        # 👉 save original page before jump
-        temp.JUMP_BACK[(req, key)] = offset
+        offset = int(offset)
+
+        # 🔥 ONLY save if not already set
+        if (req, key) not in temp.JUMP_BACK:
+            temp.JUMP_BACK[(req, key)] = offset
+
         current_page = int(current_page)
         total_pages = int(total_pages)
-        offset = int(offset)
 
         settings = await get_settings(query.message.chat.id)
         per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
