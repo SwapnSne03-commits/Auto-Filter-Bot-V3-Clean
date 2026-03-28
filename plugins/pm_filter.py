@@ -2125,7 +2125,7 @@ async def advantage_spoll_choker(bot, query):
     try:
         movies = await get_poster(id, id=True)
         title = movies.get("title") if isinstance(movies, dict) else None
-        movie = clean_query(title) if title else None
+        movie = clean_query(title) if title else clean_query(id)
     except Exception:
         movies = None
         movie = None
@@ -2227,7 +2227,7 @@ async def advantage_spoll_choker(bot, query):
             if ((has_season and has_keyword) or episode_range) and file not in smart_combined:
                 smart_combined.append(file)
 	
-        key = f"{chat_id}-{user_msg.id}"
+        key = f"{chat_id}-{user_msg.id if user_msg else query.id}"
 
         temp.GETALL[key] = all_files
         temp.SMART_FILTERS[key] = {
@@ -3192,7 +3192,7 @@ async def auto_filter(client, msg, spoll=False):
 
     query = (msg.text or "").strip()
 
-    if not re.match(r'^[\w\s\-\.\:\;\!\"\/\'\(\)]+$', query):
+    if not re.match(r'^[\w\s\-\.\:\;\!\"\/\'\(\)\&]+$', query):
         warn = await msg.reply_text(
             "📌 <b>ᴜsᴇ ɴᴏʀᴍᴀʟ ᴇɴɢʟɪsʜ ʟᴇᴛᴛᴇʀs ᴏɴʟʏ.\nᴀᴠᴏɪᴅ ᴏᴛʜᴇʀ ғᴏɴᴛs ᴏʀ ᴜɴᴜsᴜᴀʟ sʏᴍʙᴏʟs.</b>",
             parse_mode=enums.ParseMode.HTML
