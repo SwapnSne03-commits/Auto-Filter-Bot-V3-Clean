@@ -37,6 +37,8 @@ SPELL_CACHE = {}
 POSTER_CACHE = {}         # for advantage_spell_chok (movies list)
 CACHE_LIMIT = 200
 
+temp.JUMP_BACK = {}
+
 lock = asyncio.Lock()
 
 if not hasattr(temp, "PAGE_STATE"):
@@ -476,6 +478,15 @@ async def next_page(bot, query):
                     callback_data=f"jump#{key}#{current_page}#{total_pages}#{offset}"
                 )
             ])
+        orig_offset = temp.JUMP_BACK.get((req, key))
+
+        if orig_offset is not None and orig_offset != offset:
+            btn.append([
+                InlineKeyboardButton(
+                    "↭ ʙᴀᴄᴋ ᴛᴏ ᴍᴀɪɴ ᴘᴀɢᴇ",
+                    callback_data=f"next_{req}_{key}_{orig_offset}"
+                )
+            ])
         active = temp.ACTIVE_FILTER.get(key)
 
         if active:
@@ -520,6 +531,8 @@ async def jump_page_handler(client, query: CallbackQuery):
     try:
         _, key, current_page, total_pages, offset = query.data.split("#")
 
+        # 👉 save original page before jump
+        temp.JUMP_BACK[(req, key)] = offset
         current_page = int(current_page)
         total_pages = int(total_pages)
         offset = int(offset)
@@ -1235,6 +1248,18 @@ async def filter_qualities_cb_handler(client: Client, query: CallbackQuery):
                     callback_data="pages"
                 )
             ])
+
+        per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
+        total_pages = math.ceil(total_results / per_page) if total_results else 1
+        current_page = (offset // per_page) + 1
+
+        if total_pages > 2:
+            btn.append([
+                InlineKeyboardButton(
+                    "🔢 ᴊᴜᴍᴘ ᴘᴀɢᴇ",
+                    callback_data=f"jump#{key}#{current_page}#{total_pages}#{offset}"
+                )
+            ])
         if qual != "homepage":
             btn.append([
                 InlineKeyboardButton(
@@ -1616,6 +1641,19 @@ async def filter_language_cb_handler(client: Client, query: CallbackQuery):
                     callback_data="pages"
                 )
             ])
+
+        per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
+        total_pages = math.ceil(total_results / per_page) if total_results else 1
+        current_page = (offset // per_page) + 1
+
+        if total_pages > 2:
+            btn.append([
+                InlineKeyboardButton(
+                    "🔢 ᴊᴜᴍᴘ ᴘᴀɢᴇ",
+                    callback_data=f"jump#{key}#{current_page}#{total_pages}#{offset}"
+                )
+            ])
+	
         # 🔙 Back to main file list
         if lang != "homepage":
             btn.append([
@@ -1988,6 +2026,18 @@ async def filter_season_cb_handler(client: Client, query: CallbackQuery):
                     callback_data="pages"
                 )
             ])
+
+        per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
+        total_pages = math.ceil(total_results / per_page) if total_results else 1
+        current_page = (offset // per_page) + 1
+
+        if total_pages > 2:
+            btn.append([
+                InlineKeyboardButton(
+                    "🔢 ᴊᴜᴍᴘ ᴘᴀɢᴇ",
+                    callback_data=f"jump#{key}#{current_page}#{total_pages}#{offset}"
+                )
+            ])
         if seas != "homepage":
             btn.append([
                 InlineKeyboardButton(
@@ -2173,6 +2223,17 @@ async def combined_filter(client, query):
 
         btn.append(row)
 
+        per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
+        total_pages = math.ceil(total_results / per_page) if total_results else 1
+        current_page = (offset // per_page) + 1
+
+        if total_pages > 2:
+            btn.append([
+                InlineKeyboardButton(
+                    "🔢 ᴊᴜᴍᴘ ᴘᴀɢᴇ",
+                    callback_data=f"jump#{key}#{current_page}#{total_pages}#{offset}"
+                )
+            ])
         # 🔙 BACK TO MAIN PAGE
         btn.append([
             InlineKeyboardButton(
