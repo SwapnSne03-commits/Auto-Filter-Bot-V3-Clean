@@ -465,6 +465,17 @@ async def next_page(bot, query):
                         InlineKeyboardButton("ɴᴇxᴛ ⋟", callback_data=f"next_{req}_{key}_{n_offset}")
                     ],
                 )
+
+        total_pages = math.ceil(total / per_page) if total else 1
+        current_page = (offset // per_page) + 1
+
+        if total_pages > 2:
+            btn.append([
+                InlineKeyboardButton(
+                    "ᴊᴜᴍᴘ ᴘᴀɢᴇ",
+                    callback_data=f"jump#{key}#{current_page}#{total_pages}#{offset}"
+                )
+            ])
         active = temp.ACTIVE_FILTER.get(key)
 
         if active:
@@ -503,6 +514,106 @@ async def next_page(bot, query):
         await query.answer()
     except Exception as e:
         LOGGER.error(f"Error In Next Funtion - {e}")
+
+@Client.on_callback_query(filters.regex(r"^jump#"))
+async def jump_page_handler(client, query: CallbackQuery):
+    try:
+        _, key, current_page, total_pages, offset = query.data.split("#")
+
+        current_page = int(current_page)
+        total_pages = int(total_pages)
+        offset = int(offset)
+
+        settings = await get_settings(query.message.chat.id)
+        per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
+
+        # 👉 chunk system (30 pages per view)
+        chunk_size = 30
+        start = ((current_page - 1) // chunk_size) * chunk_size + 1
+        end = min(start + chunk_size - 1, total_pages)
+
+        btn = []
+        row = []
+
+        for i in range(start, end + 1):
+            page_offset = (i - 1) * per_page
+
+            # 👉 highlight current page
+            if i == current_page:
+                text = f"🔘 {i}"
+            else:
+                text = str(i)
+
+            row.append(
+                InlineKeyboardButton(
+                    text=text,
+                    callback_data=f"jpage#{key}#{page_offset}"
+                )
+            )
+
+            if len(row) == 5:
+                btn.append(row)
+                row = []
+
+        if row:
+            btn.append(row)
+
+        # 👉 prev / next chunk navigation
+        nav = []
+
+        if start > 1:
+            prev_page = start - 1
+            nav.append(
+                InlineKeyboardButton(
+                    "⋞",
+                    callback_data=f"jump#{key}#{prev_page}#{total_pages}#{(prev_page-1)*per_page}"
+                )
+            )
+
+        if end < total_pages:
+            next_page = end + 1
+            nav.append(
+                InlineKeyboardButton(
+                    "⋟",
+                    callback_data=f"jump#{key}#{next_page}#{total_pages}#{(next_page-1)*per_page}"
+                )
+            )
+
+        if nav:
+            btn.append(nav)
+
+        # 👉 back to result page
+        btn.append([
+            InlineKeyboardButton(
+                "↭ ʙᴀᴄᴋ ᴛᴏ ʀᴇsᴜʟᴛ",
+                callback_data=f"next_{query.from_user.id}_{key}_{offset}"
+            )
+        ])
+
+        await query.edit_message_reply_markup(
+            reply_markup=InlineKeyboardMarkup(btn)
+        )
+        await query.answer()
+
+    except Exception as e:
+        LOGGER.error(f"Jump Page Error: {e}")
+        await query.answer("Error loading pages", show_alert=True)
+
+@Client.on_callback_query(filters.regex(r"^jpage#"))
+async def jump_to_selected_page(client, query: CallbackQuery):
+    try:
+        _, key, offset = query.data.split("#")
+
+        req = query.from_user.id
+
+        # 👉 reuse next_page सिस्टम
+        query.data = f"next_{req}_{key}_{offset}"
+
+        await next_page(client, query)
+
+    except Exception as e:
+        LOGGER.error(f"Jump Select Error: {e}")
+        await query.answer("Error jumping page", show_alert=True)
 
 # ================= MULTI SELECT SYSTEM =================
 @Client.on_callback_query(filters.regex("^ms#"))
@@ -3797,6 +3908,18 @@ async def auto_filter(client, msg, spoll=False):
         btn.append(
             [InlineKeyboardButton(text="↭ ɴᴏ ᴍᴏʀᴇ ᴘᴀɢᴇꜱ ᴀᴠᴀɪʟᴀʙʟᴇ ↭",callback_data="pages")]
         )
+
+    per_page = 10 if settings.get("max_btn") else int(MAX_B_TN)
+    total_pages = math.ceil(total_results / per_page) if total_results else 1
+    current_page = 1
+
+    if total_pages > 2:
+        btn.append([
+            InlineKeyboardButton(
+                "ᴊᴜᴍᴘ ᴘᴀɢᴇ",
+                callback_data=f"jump#{key}#{current_page}#{total_pages}#0"
+            )
+        ])
     imdb = None
     cur_time = datetime.now(pytz.timezone('Asia/Kolkata')).time()
     time_difference = timedelta(hours=cur_time.hour, minutes=cur_time.minute, seconds=(cur_time.second+(cur_time.microsecond/1000000))) - timedelta(hours=curr_time.hour, minutes=curr_time.minute, seconds=(curr_time.second+(curr_time.microsecond/1000000)))
