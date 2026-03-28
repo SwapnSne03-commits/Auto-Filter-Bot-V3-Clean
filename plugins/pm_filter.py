@@ -276,6 +276,10 @@ async def next_page(bot, query):
             offset = 0
         temp.PAGE_STATE[key] = {"current_offset": offset}
 
+        orig_offset = temp.JUMP_BACK.get((int(req), key))
+
+        if orig_offset is not None and orig_offset == offset:
+            temp.JUMP_BACK.pop((int(req), key), None)
         if BUTTONS.get(key)!=None:
             search = BUTTONS.get(key)
         else:
