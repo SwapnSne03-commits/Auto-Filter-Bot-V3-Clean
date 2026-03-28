@@ -754,6 +754,30 @@ async def build_multi_page(client, query, key, offset):
     if nav:  # prevent empty row
         btn.append(nav)
 
+    # 🔽 🔽 JUMP SYSTEM 🔽 🔽
+    total_pages = pages
+    current_page = page
+
+    # 🔢 Jump button
+    if total_pages > 2:
+        btn.append([
+            InlineKeyboardButton(
+                "🔢 ᴊᴜᴍᴘ ᴘᴀɢᴇ",
+                callback_data=f"jump#{key}#{current_page}#{total_pages}#{offset}"
+            )
+        ])
+
+    # ↭ Back to previous (jump origin)
+    req = query.from_user.id
+    orig_offset = temp.JUMP_BACK.get((req, key))
+
+    if orig_offset is not None and orig_offset != offset:
+        btn.append([
+            InlineKeyboardButton(
+                "↭ ʙᴀᴄᴋ ᴛᴏ ᴘʀᴇᴠɪᴏᴜꜱ ᴘᴀɢᴇ",
+                callback_data=f"ms#{key}#{orig_offset}"
+            )
+        ])
     try:
         await query.edit_message_reply_markup(
             reply_markup=InlineKeyboardMarkup(btn)
@@ -3425,6 +3449,7 @@ async def auto_filter(client, msg, spoll=False):
         asyncio.create_task(delete_msg(warn, 8, msg))
         return 
 
+    display_query = msg.text if msg.text else "Unknown"
     chat_id = msg.chat.id
     settings = await get_settings(chat_id)
 
@@ -3888,7 +3913,7 @@ async def auto_filter(client, msg, spoll=False):
 
         search, files, offset, total_results = spoll
 
-        display_query = search or "Unknown"
+        display_query = search or display_query
 
         m = await message.reply_text(
             f'<b>ᴡᴀɪᴛ {message.from_user.mention}\nsᴇᴀʀᴄʜɪɴɢ ʏᴏᴜʀ ǫᴜᴇʀʏ :<i>{search}...</i></b>',
