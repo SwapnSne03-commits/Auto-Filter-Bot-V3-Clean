@@ -117,7 +117,7 @@ P_TTI_SHOW_OFF = is_enabled((environ.get('P_TTI_SHOW_OFF', "False")), False)
 IMDB = is_enabled((environ.get('IMDB', "True")), False)
 AUTO_FFILTER = is_enabled((environ.get('AUTO_FFILTER', "True")), True)
 AUTO_DELETE = is_enabled((environ.get('AUTO_DELETE', "True")), True)
-AUTO_DELETE_TIME = int(environ.get("AUTO_DELETE_TIME", "300"))  
+AUTO_DELETE_TIME = int(environ.get("AUTO_DELETE_TIME", "150"))  
 LINK_MODE = is_enabled((environ.get('LINK_MODE', "True")), True)
 CUSTOM_FILE_CAPTION = environ.get("CUSTOM_FILE_CAPTION", f"{script.CAPTION}")
 BATCH_FILE_CAPTION = environ.get("BATCH_FILE_CAPTION", CUSTOM_FILE_CAPTION)
@@ -153,7 +153,7 @@ IGNORE_WORDS = [
 #Image Host 
 IMGBB_API_KEY = os.environ["IMGBB_API_KEY"]
 
-BAD_WORDS = ["Hdhub4u", "cinevood", "skymoviedHD", "hdmovie2.productions", "hdmovie2", "4khdhub", "Toonworld4all", "TW4ALL", "ExtraFlix", "Hdhub", "Movies", "Movies4u", "movies4u", "Vegamovies", "extraflix", "hdholly", "Filmy4wap", "Filmu4cab", "Tamilmv", "CineVood", "Hub4u", "Hub4", "SkymoviesHD", "Skymovieshd", "telegram", "tg", "TG", "Telegram", "HdWebMovies", "mkvcinemas", "mkvCinemas", "mkvking", "5moviez", "hdm2", "mkvcinema", "1tamil", "1tamilmv", "1Tamil", "1tamilblaster", "1TamilBlaster", "Moviez", "moviez", "yts mx", "YTS", "YTS MX", "mkvCinem", "filmyzilla", "filmzilla", "CineVood", "BT MOVIES HD", "FILMSCLUB04", "XDMovies", "mp4movies", "mp4moviez", "MLWBD", "MLSBD", "mlsbd", "mlwbd", "FibWatch", "fibwatch", "Joya9tv", "joya9tv", "Cinedoze", "CineDoze", "cinedoze", "world4u", "SSRMovies", "SSRmovies", "5MovieRulz", "FilmyCab"] #remove words form file name 
+BAD_WORDS = ["Hdhub4u", "cinevood", "skymoviedHD", "hdmovie2.productions", "hdmovie2", "4khdhub", "Toonworld4all", "TW4ALL", "ExtraFlix", "Hdhub", "Movies", "Movies4u", "movies4u", "Vegamovies", "extraflix", "hdholly", "Filmy4wap", "Filmu4cab", "Tamilmv", "CineVood", "Hub4u", "Hub4", "SkymoviesHD", "Skymovieshd", "telegram", "tg", "TG", "Telegram", "HdWebMovies", "mkvcinemas", "mkvCinemas", "mkvking", "5moviez", "hdm2", "mkvcinema", "1tamil", "1tamilmv", "1Tamil", "1tamilblaster", "1TamilBlaster", "Moviez", "moviez", "yts mx", "YTS", "YTS MX", "mkvCinem", "filmyzilla", "filmzilla", "CineVood", "BT MOVIES HD", "FILMSCLUB04", "XDMovies", "mp4movies", "mp4moviez", "MLWBD", "MLSBD", "mlsbd", "mlwbd", "FibWatch", "fibwatch", "Joya9tv", "joya9tv", "Cinedoze", "CineDoze", "cinedoze", "world4u", "SSRMovies", "SSRmovies", "5MovieRulz", "FilmyCab", "fib watch"] #remove words form file name 
 LANGUAGES = ["malayalam", "", "tamil", "", "english", "", "hindi", "", "telugu", "", "kannada", "", "gujarati", "", "marathi", "", "punjabi", "", "bengali", ""]
 QUALITIES = ["360P", "", "480P", "", "720P", "", "1080P", "", "1440P", "", "2160P", "", "4k", ""]
 SEASONS = ["s01" , "s02" , "s03" , "s04", "s05" , "s06" , "s07" , "s08" , "s09" , "s10" , "s11" , "s12"]
