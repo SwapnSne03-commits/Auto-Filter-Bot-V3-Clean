@@ -312,7 +312,7 @@ async def next_page(bot, query):
                 aliases = SMART_LANG_MAP.get(active["value"], {}).get("aliases", [])
                 data = [
                     f for f in all_files
-                    if any(a in (f.file_name or "").lower() for a in aliases)
+                    if any(re.search(rf'\b{re.escape(a)}\b', (f.file_name or "").lower()) for a in aliases)
                 ]
             elif active["type"] == "combined":
                 data = temp.SMART_FILTERS.get(key, {}).get("combined") or []
@@ -1530,7 +1530,7 @@ async def filter_language_cb_handler(client: Client, query: CallbackQuery):
                 # 1️⃣ সব ফাইল থেকে filter করো
                 filtered_files = [
                     f for f in all_files
-                    if any(alias in (f.file_name or "").lower() for alias in aliases)
+                    if any(re.search(rf'\b{re.escape(alias)}\b', (f.file_name or "").lower()) for alias in aliases)
 				]
 
                 temp.FILTER_FILES[key] = filtered_files
@@ -2413,7 +2413,7 @@ async def advantage_spoll_choker(bot, query):
 
             # language detect
             for lang_key, data in SMART_LANG_MAP.items():
-                if any(alias in text for alias in data["aliases"]):
+                if any(re.search(rf'\b{re.escape(alias)}\b', text) for alias in data["aliases"]):
                     smart_languages.add(lang_key)
 
             # season detect
@@ -2466,7 +2466,9 @@ async def advantage_spoll_choker(bot, query):
         if not user_msg:
             return await query.answer("Request expired ❌", show_alert=True)
 
-        k = (movie, valid_files, offset, total_results)
+        display_query = (title or movie or clean_query(id) or "").strip()
+        k = (display_query, valid_files, offset, total_results)
+
         await auto_filter(bot, user_msg, k)
     else:
         reqstr1 = query.from_user.id if query.from_user else 0
