@@ -4053,7 +4053,6 @@ async def auto_filter(client, msg, spoll=False):
                 poster_url = await get_best_visual(tmdb_data)
     if not files:
         return
-    display_query = display_query
 
     header_note = ""
     if fallback_info:
