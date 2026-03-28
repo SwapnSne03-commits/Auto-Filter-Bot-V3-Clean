@@ -3888,6 +3888,8 @@ async def auto_filter(client, msg, spoll=False):
 
         search, files, offset, total_results = spoll
 
+        display_query = search or "Unknown"
+
         m = await message.reply_text(
             f'<b>ᴡᴀɪᴛ {message.from_user.mention}\nsᴇᴀʀᴄʜɪɴɢ ʏᴏᴜʀ ǫᴜᴇʀʏ :<i>{search}...</i></b>',
             reply_to_message_id=message.id
@@ -4051,7 +4053,7 @@ async def auto_filter(client, msg, spoll=False):
                 poster_url = await get_best_visual(tmdb_data)
     if not files:
         return
-    display_query = fallback_query if fallback_query else original_query
+    display_query = display_query
 
     header_note = ""
     if fallback_info:
