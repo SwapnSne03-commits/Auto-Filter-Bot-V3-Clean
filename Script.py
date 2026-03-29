@@ -4,12 +4,10 @@ class script(object):
 
     FEATURES_TXT = """<b>ʜᴇʀᴇ ɪꜱ ᴀʟʟ ᴍʏ ꜰᴜɴᴛɪᴏɴꜱ.</b>"""
 
-    ABOUT_TXT = """<b>╭────[ ᴍʏ ᴅᴇᴛᴀɪʟs ]────⍟
+    ABOUT_TXT = """<b>╭────[⚡ ᴍʏ ᴅᴇᴛᴀɪʟs ⚡]────⍟
 ├⍟ 🎭 Mʏ Nᴀᴍᴇ : {}
-├⍟ 🤖 Cʀᴇᴀᴛᴏʀ : <a href="{}">SᴡᴀᴘɴᴏNɪL</a> 
-├⍟ ⚙️ Lɪʙʀᴀʀʏ : <a href='https://docs.pyrogram.org/'>ᴘʏʀᴏɢʀᴀᴍ</a>
-├⍟ 🍿 Lᴀɴɢᴜᴀɢᴇ : <a href='https://www.python.org/download/releases/3.0/'>ᴘʏᴛʜᴏɴ 𝟹</a> 
-├⍟ 🐍 DᴀᴛᴀBᴀsᴇ : <a href='https://www.mongodb.com/'>ᴍᴏɴɢᴏ ᴅʙ</a> 
+├⍟ 🤖 Cʀᴇᴀᴛᴏʀ : <a href="{}">Sᴡᴀᴘɴᴏɴɪʟ ࿐</a>
+├⍟ 🕵️‍♂️ Uᴘᴅᴀᴛᴇs : <a href='https://t.me/Graduate_Movies'>Gʀᴀᴅᴜᴀᴛᴇ Mᴏᴠɪᴇs ⚡</a>
 ├⍟ ⚙️ Bᴏᴛ Sᴇʀᴠᴇʀ : Lᴏᴄᴀʟ Sᴇʀᴠᴇʀ ⌛ 
 ├⍟ ⚡ Os : Lɪɴᴜx 💻
 ╰───────────────⍟</b>"""
