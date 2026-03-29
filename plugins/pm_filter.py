@@ -64,7 +64,7 @@ def is_meaningful_query(search: str) -> bool:
         "dubbed", "original", "dual", "multi",
         "480p", "720p", "1080p", "2160p", "4k",
         "hdrip", "webrip", "webdl", "bluray",
-        "cam", "hdcam", "hq"
+        "cam", "hdcam", "hq", "mkv"
     }
 
     meaningful = False
@@ -555,6 +555,14 @@ async def jump_page_handler(client, query: CallbackQuery):
         end = min(start + chunk_size - 1, total_pages)
 
         btn = []
+
+        btn.append([
+            InlineKeyboardButton(
+                f"⇓ sᴇʟᴇᴄᴛ ᴘᴀɢᴇ ᴛᴏ ᴊᴜᴍᴘ ∘ ({total_pages}) ⇓",
+                callback_data="pages"
+            )
+        ])
+		
         row = []
 
         for i in range(start, end + 1):
@@ -762,7 +770,7 @@ async def build_multi_page(client, query, key, offset):
     if total_pages > 2:
         btn.append([
             InlineKeyboardButton(
-                "🔢 ᴊᴜᴍᴘ ᴘᴀɢᴇ",
+                "ᴊᴜᴍᴘ ᴘᴀɢᴇ",
                 callback_data=f"jump#{key}#{current_page}#{total_pages}#{offset}"
             )
         ])
@@ -1289,7 +1297,7 @@ async def filter_qualities_cb_handler(client: Client, query: CallbackQuery):
         if total_pages > 2:
             btn.append([
                 InlineKeyboardButton(
-                    "🔢 ᴊᴜᴍᴘ ᴘᴀɢᴇ",
+                    "ᴊᴜᴍᴘ ᴘᴀɢᴇ",
                     callback_data=f"jump#{key}#{current_page}#{total_pages}#{offset}"
                 )
             ])
@@ -1692,7 +1700,7 @@ async def filter_language_cb_handler(client: Client, query: CallbackQuery):
         if total_pages > 2:
             btn.append([
                 InlineKeyboardButton(
-                    "🔢 ᴊᴜᴍᴘ ᴘᴀɢᴇ",
+                    "ᴊᴜᴍᴘ ᴘᴀɢᴇ",
                     callback_data=f"jump#{key}#{current_page}#{total_pages}#{offset}"
                 )
             ])
@@ -2087,7 +2095,7 @@ async def filter_season_cb_handler(client: Client, query: CallbackQuery):
         if total_pages > 2:
             btn.append([
                 InlineKeyboardButton(
-                    "🔢 ᴊᴜᴍᴘ ᴘᴀɢᴇ",
+                    "ᴊᴜᴍᴘ ᴘᴀɢᴇ",
                     callback_data=f"jump#{key}#{current_page}#{total_pages}#{offset}"
                 )
             ])
@@ -2294,7 +2302,7 @@ async def combined_filter(client, query):
         if total_pages > 2:
             btn.append([
                 InlineKeyboardButton(
-                    "🔢 ᴊᴜᴍᴘ ᴘᴀɢᴇ",
+                    "ᴊᴜᴍᴘ ᴘᴀɢᴇ",
                     callback_data=f"jump#{key}#{current_page}#{total_pages}#{offset}"
                 )
             ])
@@ -2352,7 +2360,7 @@ async def combined_info_popup(client, query):
         f"👋 ʜᴇʏ {user.first_name}\n\n"
         f"📊 ᴛᴏᴛᴀʟ ᴄᴏᴍʙɪɴᴇᴅ ᴘᴀᴄᴋꜱ : {packs}\n\n"
         f"📂 ᴛʜᴇꜱᴇ ꜰɪʟᴇꜱ ᴍᴀʏ ɪɴᴄʟᴜᴅᴇ\n"
-        f"• ᴍᴜʟᴛɪᴘʟᴇ ᴇᴘɪꜱᴏᴅᴇꜱ\n"
+        f"• ᴍᴜʟᴛɪᴘʟᴇ ᴇᴘɪꜱᴏᴅᴇꜱ ɪɴ ᴏɴᴇ ғɪʟᴇ\n"
         f"• ᴄᴏᴍᴘʟᴇᴛᴇ ꜱᴇᴀꜱᴏɴ ᴘᴀᴄᴋ\n"
         f"• ꜰᴜʟʟ ꜱᴇʀɪᴇꜱ ᴘᴀᴄᴋ\n\n"
     )
@@ -2468,7 +2476,7 @@ async def advantage_spoll_choker(bot, query):
                 "complete bangladesi series", "full bangla series",
                 "complete english series", "full bengali series",
                 "full hindi series", "complete season", "all episodes",
-                "batch", "combined", "season pack",
+                "batch", "combined", "season pack", "combine",
                 "complete series", "full series"
             ])
             if ((has_season and has_keyword) or episode_range) and file not in smart_combined:
@@ -3557,20 +3565,6 @@ async def auto_filter(client, msg, spoll=False):
                         search = v
                         break
 
-                #fallback_search = message.text.lower()
-                #fallback_search = fallback_search.replace("-", " ")
-                #fallback_search = fallback_search.replace(":", "")
-                #fallback_search = fallback_search.replace("'", " ")
-                #fallback_search = re.sub(r'[^a-zA-Z0-9\s]', '', fallback_search)
-                #fallback_search = re.sub(r'\s+', ' ', fallback_search).strip()
-
-                #if fallback_search and fallback_search != search:
-                    #files, offset, total_results = await get_search_results(
-                        #message.chat.id,
-                        #fallback_search,
-                        #offset=0,
-                        #filter=True
-		            #)
             # ===================================
             # PREMIUM SMART FALLBACK ENGINE
             # ===================================
@@ -4144,10 +4138,6 @@ async def auto_filter(client, msg, spoll=False):
 
         # store AFTER building complete caption
         temp.IMDB_CAP[message.from_user.id] = cap
-        #if not settings.get('button'):
-            #for file_num, file in enumerate(files, start=1):
-                #cap += f"\n\n<b>{file_num}. <a href='https://telegram.me/{temp.U_NAME}?start=file_{message.chat.id}_{file.file_id}'>{get_size(file.file_size)} | {clean_filename(file.file_name)}</a></b>"
-
                    
     try:
         if imdb and (poster_url or imdb.get("poster")):
